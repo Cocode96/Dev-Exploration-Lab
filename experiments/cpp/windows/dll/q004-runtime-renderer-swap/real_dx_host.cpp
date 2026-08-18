@@ -99,7 +99,7 @@ bool LoadRendererModule(RendererDllLayout layout, GraphicsBackend backend)
     renderer_module = LoadLibraryW(requested);
     if (!renderer_module)
     {
-        initialization_errors += "LoadLibraryW error code: " + std::to_string(GetLastError()) + "\n";
+        initialization_errors += "LoadLibraryW 오류 코드: " + std::to_string(GetLastError()) + "\n";
         return false;
     }
 
@@ -126,15 +126,15 @@ bool SwitchRenderer(RendererDllLayout layout, GraphicsBackend backend)
 
     if (!LoadRendererModule(layout, backend))
     {
-        initialization_errors += "LoadRendererModule failed.\n";
+        initialization_errors += "렌더러 모듈 로드 실패.\n";
         return false;
     }
 
     if (!probe_backend(backend))
     {
         initialization_errors += backend == GraphicsBackend::DirectX12
-            ? "DX12 ProbeBackend failed.\n"
-            : "DX11 ProbeBackend failed.\n";
+            ? "DX12 백엔드 검사 실패.\n"
+            : "DX11 백엔드 검사 실패.\n";
         return false;
     }
 
@@ -145,15 +145,15 @@ bool SwitchRenderer(RendererDllLayout layout, GraphicsBackend backend)
 
     if (candidate == nullptr)
     {
-        initialization_errors += "CreateRealRenderer returned nullptr.\n";
+        initialization_errors += "렌더러 생성 함수가 nullptr을 반환함.\n";
         return false;
     }
 
     if (!candidate->Initialize(main_window, 1280, 720, L"Texture", &controls))
     {
         initialization_errors += backend == GraphicsBackend::DirectX12
-            ? "DX12 renderer Initialize failed.\n"
-            : "DX11 renderer Initialize failed.\n";
+            ? "DX12 렌더러 초기화 실패.\n"
+            : "DX11 렌더러 초기화 실패.\n";
         destroy_renderer(candidate);
         return false;
     }
@@ -167,7 +167,7 @@ bool SwitchRenderer(RendererDllLayout layout, GraphicsBackend backend)
     const auto finished = std::chrono::steady_clock::now();
     RecordTiming(layout, std::chrono::duration<double, std::milli>(module_finished - started).count(),
                  std::chrono::duration<double, std::milli>(finished - module_finished).count());
-    std::wstring title = L"Real Renderer DLL Switch | ";
+    std::wstring title = L"Runtime Renderer DLL Switch | ";
     title += renderer->Name();
     title += layout == RendererDllLayout::Combined ? L" | Combined DLL" : L" | Separate DLLs";
     SetWindowTextW(main_window, title.c_str());
@@ -259,7 +259,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int show_
     RegisterClassW(&window_class);
 
     main_window =
-        CreateWindowExW(0, window_class.lpszClassName, L"Real Renderer DLL Switch", WS_OVERLAPPEDWINDOW,
+        CreateWindowExW(0, window_class.lpszClassName, L"Runtime Renderer DLL Switch", WS_OVERLAPPEDWINDOW,
                         CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720, nullptr, nullptr, instance, nullptr);
     if (!main_window)
         return 3;
@@ -270,13 +270,13 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE, PWSTR command_line, int show_
     {
         if (!benchmark.enabled)
         {
-            MessageBoxW(main_window, L"DX12 and DX11 initialization failed", L"Renderer Error",
+            MessageBoxW(main_window, L"DX12와 DX11 초기화에 실패했습니다.", L"렌더러 오류",
                         MB_ICONERROR);
         }
         else
         {
             std::ofstream error_log("renderer_benchmark_error.txt", std::ios::trunc);
-            error_log << "DX12 and DX11 initialization failed.\n";
+            error_log << "DX12와 DX11 초기화에 실패했습니다.\n";
             error_log << initialization_errors;
         }
 

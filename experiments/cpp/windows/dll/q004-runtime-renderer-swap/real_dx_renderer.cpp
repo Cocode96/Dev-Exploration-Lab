@@ -99,6 +99,11 @@ class RendererBase : public IRealRenderer
         ImGuiIO &io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\malgun.ttf", 18.0f, nullptr,
+                                         io.Fonts->GetGlyphRangesKorean()) == nullptr)
+        {
+            io.Fonts->AddFontDefault();
+        }
 
         ImGui::StyleColorsDark();
 
@@ -155,21 +160,21 @@ class RendererBase : public IRealRenderer
         if (ImGui::Checkbox("Separate DX DLLs", &separate))
             controls_->requestedDllLayout =
                 separate ? RendererDllLayout::Separate : RendererDllLayout::Combined;
-        ImGui::Text("DLL layout: %s", controls_->activeDllLayout == RendererDllLayout::Separate
+        ImGui::Text("DLL Layout: %s", controls_->activeDllLayout == RendererDllLayout::Separate
                                           ? "RealDx11Renderer.dll / RealDx12Renderer.dll"
                                           : "RealDxCombinedRenderer.dll");
 
         bool dx12 = controls_->requestedBackend == GraphicsBackend::DirectX12;
-        if (ImGui::Checkbox("DX12 DLL / backend", &dx12))
+        if (ImGui::Checkbox("DX12 DLL / Backend", &dx12))
             controls_->requestedBackend = dx12 ? GraphicsBackend::DirectX12 : GraphicsBackend::DirectX11;
-        ImGui::Text("Active: %s",
+        ImGui::Text("Active Backend: %s",
                     controls_->activeBackend == GraphicsBackend::DirectX12 ? "DirectX 12" : "DirectX 11");
 
         int count = static_cast<int>(controls_->textureObjectCount);
-        if (ImGui::SliderInt("Texture objects", &count, 1, 1000))
+        if (ImGui::SliderInt("Texture Objects", &count, 1, 1000))
             controls_->textureObjectCount = static_cast<unsigned>(count);
-        ImGui::SeparatorText("Current renderer");
-        ImGui::Text("Texture resource build: %.6f s", resource_ms_ / 1000.0);
+        ImGui::SeparatorText("Current Renderer");
+        ImGui::Text("Texture Resource Build: %.6f s", resource_ms_ / 1000.0);
         ImGui::Text("Frame CPU: %.6f s  FPS: %.1f", frame_ms_ / 1000.0, ImGui::GetIO().Framerate);
         ImGui::End();
 
@@ -178,40 +183,40 @@ class RendererBase : public IRealRenderer
         auto draw_timing = [](const char *title, const ExperimentControls::TimingStatistics &timing) {
             ImGui::SeparatorText(title);
             ImGui::Text("Samples: %u", timing.samples);
-            ImGui::Text("Last total: %.6f s", timing.lastTotalMs / 1000.0);
-            ImGui::Text("  DLL module stage: %.6f s", timing.lastModuleMs / 1000.0);
-            ImGui::Text("  Renderer + textures: %.6f s", timing.lastRendererMs / 1000.0);
+            ImGui::Text("Last Total: %.6f s", timing.lastTotalMs / 1000.0);
+            ImGui::Text("  DLL Module Stage: %.6f s", timing.lastModuleMs / 1000.0);
+            ImGui::Text("  Renderer + Textures: %.6f s", timing.lastRendererMs / 1000.0);
             ImGui::Text("Average: %.6f s", timing.averageTotalMs / 1000.0);
-            ImGui::Text("Min / max: %.6f / %.6f s", timing.minimumTotalMs / 1000.0,
+            ImGui::Text("Min / Max: %.6f / %.6f s", timing.minimumTotalMs / 1000.0,
                         timing.maximumTotalMs / 1000.0);
         };
-        draw_timing("Combined DLL, internal backend switch", controls_->combinedTiming);
-        draw_timing("Separate DLLs, unload + load", controls_->separateTiming);
+        draw_timing("Combined DLL, Internal Backend Switch", controls_->combinedTiming);
+        draw_timing("Separate DLLs, Unload + Load", controls_->separateTiming);
 
         if (controls_->combinedTiming.samples && controls_->separateTiming.samples)
         {
             const double difference =
                 controls_->separateTiming.averageTotalMs - controls_->combinedTiming.averageTotalMs;
-            ImGui::SeparatorText("Average difference");
-            ImGui::Text("Separate - combined: %+.6f s", difference / 1000.0);
+            ImGui::SeparatorText("Average Difference");
+            ImGui::Text("Separate - Combined: %+.6f s", difference / 1000.0);
         }
         ImGui::End();
 
         ImGui::Begin("Texture Objects");
         ImGui::Text("Source: %ls", texture_path_.c_str());
-        ImGui::Text("Submitted every frame: %zu textured quads", objects_.size());
+        ImGui::Text("Submitted Every Frame: %zu Textured Quads", objects_.size());
         DrawTextureGrid();
         ImGui::End();
 
         ImGui::Begin("Experiment Log");
-        ImGui::Text("[%s] %zu GPU texture resources",
+        ImGui::Text("[%s] %zu GPU Texture Resources",
                     controls_->activeBackend == GraphicsBackend::DirectX12 ? "DX12" : "DX11",
                     objects_.size());
-        ImGui::Text("[%s] active DLL layout",
-                    controls_->activeDllLayout == RendererDllLayout::Separate ? "separate" : "combined");
-        ImGui::Text("Last resource rebuild %.6f s", resource_ms_ / 1000.0);
-        ImGui::TextWrapped("Compare the two sections only at the same texture count and backend transition. "
-                           "Discard the first warm-up sample. Press ESC to exit.");
+        ImGui::Text("[%s] Active DLL Layout",
+                    controls_->activeDllLayout == RendererDllLayout::Separate ? "Separate" : "Combined");
+        ImGui::Text("Last Resource Rebuild: %.6f s", resource_ms_ / 1000.0);
+        ImGui::TextWrapped("같은 Texture Object 수와 Backend 전환 조건에서만 두 결과를 비교하세요. "
+                           "첫 warm-up sample은 제외하고, 종료하려면 ESC를 누르세요.");
         ImGui::End();
     }
 

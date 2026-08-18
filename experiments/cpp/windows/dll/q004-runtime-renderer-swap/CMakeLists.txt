@@ -14,6 +14,10 @@ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT 0
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(MSVC)
+    add_compile_options(/utf-8)
+endif()
+
 add_library(20_DLL_RealDxCombinedRenderer SHARED real_dx_renderer.cpp)
 add_library(21_DLL_RealDx11Renderer SHARED real_dx_renderer.cpp)
 add_library(22_DLL_RealDx12Renderer SHARED real_dx_renderer.cpp)
