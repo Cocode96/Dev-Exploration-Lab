@@ -1,6 +1,6 @@
 # Q004, 런타임 렌더러 DLL 교체 구조 비교
 
-원본 Discussion: [DX9, DX11, DX12 렌더러를 DLL로 분리하면 실행 중 교체할 수 있을까?](https://github.com/Cocode96/Daily-Dev-Questions/discussions/4)
+원본 Discussion: [DX9, DX11, DX12 렌더러를 DLL로 분리하면 실행 중 교체할 수 있을까?](https://github.com/Cocode96/Dev-Exploration-Lab/discussions/4)
 
 ## 질문
 
@@ -75,6 +75,6 @@ DLL 파일 크기 합계는 분리 구조가 28,672바이트, 단일 DLL이 15,3
 
 ## 관련 자료
 
-- [Discussion #4](https://github.com/Cocode96/Daily-Dev-Questions/discussions/4)
+- [Discussion #4](https://github.com/Cocode96/Dev-Exploration-Lab/discussions/4)
 - [Experiment Runner와 실행 방법](../../../experiments/python/benchmark-runner)
 - [60회 원본 CSV](../../../experiments/python/benchmark-runner/reports/q004-dll-architecture-comparison/raw_results.csv)

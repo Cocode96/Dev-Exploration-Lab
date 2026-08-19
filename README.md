@@ -1,89 +1,77 @@
-# Daily Dev Questions
+# Dev Exploration Lab
 
-[![GitHub Discussions](https://img.shields.io/github/discussions/Cocode96/Daily-Dev-Questions?logo=github&label=Discussions)](https://github.com/Cocode96/Daily-Dev-Questions/discussions)
+[![GitHub Discussions](https://img.shields.io/github/discussions/Cocode96/Dev-Exploration-Lab?logo=github&label=Discussions)](https://github.com/Cocode96/Dev-Exploration-Lab/discussions)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-3fb950.svg)](CONTRIBUTING.md)
-[![Main Branch](https://img.shields.io/badge/main-protected-8957e5.svg?logo=github)](https://github.com/Cocode96/Daily-Dev-Questions/branches)
-[![Languages](https://img.shields.io/badge/language-Korean%20%7C%20English-58a6ff.svg)](#한국어)
+[![Main Branch](https://img.shields.io/badge/main-protected-8957e5.svg?logo=github)](https://github.com/Cocode96/Dev-Exploration-Lab/branches)
+[![Languages](https://img.shields.io/badge/language-Korean%20%7C%20English-58a6ff.svg)](#english)
 
-> 개발 질문에 대한 생각을 나누고, 공식 문서와 실험으로 함께 검증합니다.<br>
-> Share ideas about development questions, then verify them together through official documentation and experiments.
+> 게임 개발과 AX 기술에 관한 질문을 재현 가능한 실험으로 검증하고, 그 결과를 실제 프로젝트에 다시 적용합니다.<br>
+> Reproducible experiments in game development and AX, carried back into real projects.
 
-[한국어](#한국어) | [English](#english) | [질문하기](https://github.com/Cocode96/Daily-Dev-Questions/discussions/categories/q-a) | [검증된 질문](questions/README.md) | [참여 안내](https://github.com/Cocode96/Daily-Dev-Questions/discussions/1) | [기여 가이드](CONTRIBUTING.md)
+[실험](#실험) | [연구 흐름](#연구-흐름) | [질문하기](https://github.com/Cocode96/Dev-Exploration-Lab/discussions/categories/q-a) | [검증된 질문](questions/README.md) | [기여 가이드](CONTRIBUTING.md) | [English](#english)
 
-## 한국어
+## 이 저장소가 다루는 것
 
-게임 클라이언트 개발 경험을 기준으로 C++, Python, CS, 게임 개발, AI Agent에 관한 질문을 다룹니다. 처음부터 정답을 알 필요는 없습니다. 각자의 생각을 공유하고, 코드와 공식 문서로 함께 확인하는 과정을 중요하게 생각합니다.
+게임 클라이언트 프로그래머의 관점에서 다음 주제를 직접 구현하고 측정합니다.
 
-### 참여 방법
+- C++, DirectX, 렌더링 구조와 그래픽스 최적화
+- Unity와 게임 클라이언트 구조
+- Python 기반 측정 도구와 개발 자동화
+- AI Agent와 게임 개발 AX 파이프라인
+- 객체 모델, 메모리, 운영체제 등 구현에 연결되는 CS 주제
 
-1. [Q&A Discussions](https://github.com/Cocode96/Daily-Dev-Questions/discussions/categories/q-a)에 질문과 현재 생각을 작성합니다.
-2. 다른 사람의 관점, 반례, 근거와 실험 결과를 나눕니다.
-3. 답이 틀려도 비난하지 않고, 잘 모르는 개념은 근거와 예시로 친절하게 설명합니다.
-4. 토론이 끝나면 확인된 내용을 [`questions/` 검증 아카이브](questions/README.md)에 정리합니다.
+단순히 개념을 정리하는 데서 끝내지 않습니다. 궁금한 점을 작은 실험으로 분리하고, 동일한 조건에서 결과를 비교한 뒤, 유효한 결론을 원래 게임 프로젝트와 개발 도구에 다시 적용하는 것이 목표입니다.
 
-자세한 운영 원칙은 [참여 안내 공지](https://github.com/Cocode96/Daily-Dev-Questions/discussions/1)에서 확인할 수 있습니다.
+## 연구 흐름
 
-### 공개 협업 방식
-
-- 누구나 Discussion에서 comment, review, approve로 의견을 나눌 수 있습니다.
-- 검증된 내용을 문서로 남기려면 fork 또는 작업 브랜치에서 PR을 작성합니다.
-- `main` 직접 push와 force push는 허용하지 않습니다.
-- review 대화를 모두 해결한 뒤 maintainer가 최종 확인하고 merge합니다.
-- 자세한 작성 기준은 [기여 가이드](CONTRIBUTING.md)를 따릅니다.
-
-### 질문 분야
-
-- C++ 메모리, 객체 수명, 게임 구조
-- Python 객체 모델, 실행 방식, 자동화
-- 자료구조, 운영체제, 네트워크 등 CS 기초
-- Unity, 게임 클라이언트 개발
-- AI Agent, 게임 개발 파이프라인
-
-### 질문 작성 형식
-
-```md
-# 질문 제목
-
-## 질문
-궁금한 현상과 배경
-
-## 재현 코드와 실행 결과
-실행 가능한 최소 코드와 실제 결과
-
-## 현재 생각
-현재 가설과 확신하지 못하는 부분
-
-## 궁금한 점
-함께 확인하고 싶은 구체적인 질문
+```text
+Question → Hypothesis → Reproducible Experiment → Measurement → Conclusion → Project Application
 ```
+
+1. [Discussions](https://github.com/Cocode96/Dev-Exploration-Lab/discussions/categories/q-a)에서 질문과 현재 가설을 공개합니다.
+2. 비교 조건, 측정 지표, 예상 결과를 정하고 최소 실험을 설계합니다.
+3. `experiments/`에 실행 가능한 코드, 환경, 원시 결과를 남깁니다.
+4. 수치와 시각적 결과를 바탕으로 결론과 한계를 기록합니다.
+5. 실제 프로젝트에 적용했다면 적용 전후의 변화와 판단 근거를 연결합니다.
+
+실패한 가설도 보존합니다. 결과를 재현할 수 있고 다음 판단에 도움이 된다면 의미 있는 기록으로 취급합니다.
+
+## 실험
+
+### Game development and graphics
+
+- [런타임 렌더러 DLL 교체 구조](questions/game-development/q004-runtime-renderer-dll-swap/README.md)
+
+### Experiment tooling
+
+- [Python benchmark runner](experiments/python/benchmark-runner/README.md), 반복 실행, 워밍업, CSV 기록을 위한 경량 측정 도구
+- [Q004 raw benchmark results](experiments/python/benchmark-runner/reports/q004-dll-architecture-comparison/raw_results.csv)
+
+다음 그래픽스 비교 실험은 같은 장면, 같은 하드웨어, 같은 측정 조건을 우선합니다. 예를 들어 WBOIT와 Z-Sorting은 성능뿐 아니라 교차 반투명 오브젝트, 깊이 복잡도, 시각적 오류를 함께 비교합니다.
+
+## 저장소 구조
+
+```text
+experiments/   실행 가능한 실험 코드, 설정, 원시 측정 결과
+questions/     토론을 거쳐 검증한 질문과 결론
+```
+
+실험이 실제 프로젝트에 적용되면 해당 프로젝트의 커밋이나 문서로 연결해 실험과 제품 코드의 역할을 분리합니다.
+
+## 공개 협업
+
+- 질문과 초기 가설은 Discussion에서 자유롭게 나눕니다.
+- 반례, 공식 문서, 프로파일링 결과와 재현 가능한 코드를 환영합니다.
+- 검증된 문서와 실험은 작업 브랜치 또는 fork에서 PR로 제안합니다.
+- `main` 직접 push와 force push는 허용하지 않습니다.
+- 자세한 기준은 [CONTRIBUTING.md](CONTRIBUTING.md)를 따릅니다.
 
 ## English
 
-This repository explores questions about C++, Python, computer science, game development, and AI agents from a game client programmer's perspective. You do not need to know the correct answer before joining. The goal is to share how we think, compare perspectives, and verify conclusions with reproducible experiments and authoritative sources.
+Dev Exploration Lab is a public engineering notebook for reproducible experiments in game development, computer graphics, C++, Python, and AI-assisted development workflows.
 
-### How to participate
+The repository follows a practical loop: start with a question, state a hypothesis, build a controlled experiment, measure the result, document the limits, and apply useful findings back to a real project. Discussions hold open questions and early reasoning. The repository preserves executable experiments, raw results, and verified conclusions.
 
-1. Post your question and current hypothesis in [Q&A Discussions](https://github.com/Cocode96/Daily-Dev-Questions/discussions/categories/q-a).
-2. Share alternative perspectives, counterexamples, references, and experiment results.
-3. Do not blame anyone for being wrong. Explain unfamiliar concepts kindly with evidence and examples.
-4. After verification, summarize the conclusion in the [`questions/` archive](questions/README.md).
+Current work includes runtime renderer DLL architecture experiments and a Python benchmark runner. Planned graphics studies, such as WBOIT versus Z-Sorting, will compare performance and visual correctness under controlled conditions.
 
-Read the [community guide](https://github.com/Cocode96/Daily-Dev-Questions/discussions/1) for the full participation guidelines.
-
-### Open collaboration workflow
-
-- Everyone is welcome to contribute through Discussion comments, reviews, and approvals.
-- To add a verified document, open a PR from a fork or working branch.
-- Direct pushes and force pushes to `main` are blocked.
-- The maintainer performs the final review and merge after all review conversations are resolved.
-- See the [contribution guide](CONTRIBUTING.md) for writing guidelines.
-
-### Topics
-
-- C++ memory, object lifetime, and game architecture
-- Python object model, execution behavior, and automation
-- Data structures, operating systems, networking, and other CS fundamentals
-- Unity and game client development
-- AI agents and game development pipelines
-
-Wrong hypotheses are welcome. Curiosity, respectful discussion, and verifiable evidence matter more than being correct on the first try.
+Wrong hypotheses are welcome. Reproducibility, evidence, and practical application matter more than being correct on the first try.
