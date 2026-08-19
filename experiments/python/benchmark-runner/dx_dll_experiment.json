@@ -1,0 +1,32 @@
+{
+  "name": "q004-dll-architecture-comparison",
+  "iterations": 30,
+  "warmup": 3,
+  "timeout_seconds": 15,
+  "random_seed": 20260819,
+  "output_directory": "results",
+  "variants": [
+    {
+      "name": "separate_dll",
+      "command": [
+        "{python}",
+        "dx_dll_adapter.py",
+        "--executable",
+        "../../cpp/windows/dll/q004-runtime-renderer-swap/build/Release/renderer_compare.exe",
+        "--mode",
+        "separate"
+      ]
+    },
+    {
+      "name": "combined_dll",
+      "command": [
+        "{python}",
+        "dx_dll_adapter.py",
+        "--executable",
+        "../../cpp/windows/dll/q004-runtime-renderer-swap/build/Release/renderer_compare.exe",
+        "--mode",
+        "combined"
+      ]
+    }
+  ]
+}

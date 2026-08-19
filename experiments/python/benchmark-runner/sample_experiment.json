@@ -1,0 +1,18 @@
+{
+  "name": "sample-delay-comparison",
+  "iterations": 5,
+  "warmup": 1,
+  "timeout_seconds": 5,
+  "random_seed": 20260819,
+  "output_directory": "results",
+  "variants": [
+    {
+      "name": "short_delay",
+      "command": ["{python}", "sample_target.py", "--name", "A", "--delay-ms", "10"]
+    },
+    {
+      "name": "long_delay",
+      "command": ["{python}", "sample_target.py", "--name", "B", "--delay-ms", "20"]
+    }
+  ]
+}
