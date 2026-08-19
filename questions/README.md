@@ -1,6 +1,6 @@
 # Verified Questions
 
-[한국어](#한국어) | [English](#english) | [질문하기](https://github.com/Cocode96/Daily-Dev-Questions/discussions/categories/q-a) | [저장소 홈](../README.md)
+[한국어](#한국어) | [English](#english) | [질문하기](https://github.com/Cocode96/Dev-Exploration-Lab/discussions/categories/q-a) | [저장소 홈](../README.md)
 
 ## 한국어
 
