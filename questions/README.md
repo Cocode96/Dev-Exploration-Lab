@@ -22,3 +22,7 @@ questions/
 This archive contains conclusions discussed in GitHub Discussions and verified through reproducible code experiments and official documentation.
 
 Each document records the original Discussion, initial hypotheses, verification method, verified conclusion, and references. Topic directories will be added when the first verified question is documented.
+
+## Verified documents
+
+- [Q004, Runtime renderer DLL swap architecture](game-development/q004-runtime-renderer-dll-swap/README.md)
