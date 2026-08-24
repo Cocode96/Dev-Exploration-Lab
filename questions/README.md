@@ -26,3 +26,4 @@ Each document records the original Discussion, initial hypotheses, verification 
 ## Verified documents
 
 - [Q004, Runtime renderer DLL swap architecture](game-development/q004-runtime-renderer-dll-swap/README.md)
+- [Q005, CPU, worker threads, Compute Shader Update break-even](game-development/q005-update-parallel-break-even/README.md)

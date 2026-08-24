@@ -41,11 +41,13 @@ Question → Hypothesis → Reproducible Experiment → Measurement → Conclusi
 ### Game development and graphics
 
 - [런타임 렌더러 DLL 교체 구조](questions/game-development/q004-runtime-renderer-dll-swap/README.md)
+- [작은 Update의 CPU, 멀티스레드, Compute Shader 손익분기점](questions/game-development/q005-update-parallel-break-even/README.md)
 
 ### Experiment tooling
 
 - [Python benchmark runner](experiments/python/benchmark-runner/README.md), 반복 실행, 워밍업, CSV 기록을 위한 경량 측정 도구
 - [Q004 raw benchmark results](experiments/python/benchmark-runner/reports/q004-dll-architecture-comparison/raw_results.csv)
+- [DX11 Update break-even experiment](experiments/cpp/dx11-update-break-even/README.md), CPU 단일 스레드, 작업 스레드, Compute Shader 비교
 
 다음 그래픽스 비교 실험은 같은 장면, 같은 하드웨어, 같은 측정 조건을 우선합니다. 예를 들어 WBOIT와 Z-Sorting은 성능뿐 아니라 교차 반투명 오브젝트, 깊이 복잡도, 시각적 오류를 함께 비교합니다.
 
