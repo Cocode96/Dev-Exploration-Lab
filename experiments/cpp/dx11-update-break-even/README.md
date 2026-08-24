@@ -6,6 +6,13 @@
 
 Visual Studio 2026에서 `Dx11UpdateBreakEven.sln`을 열고 `Release | x64`로 빌드한다. CMake는 사용하지 않는다.
 
+```text
+Client/Private/       실행 진입점과 실험 흐름
+Benchmark/Public/     Benchmark 공개 인터페이스
+Benchmark/Private/    CPU, 작업 스레드, DX11 측정 구현
+Shader/               Compute Shader
+```
+
 명령줄에서는 Visual Studio Developer PowerShell에서 다음 명령을 사용한다.
 
 ```powershell
