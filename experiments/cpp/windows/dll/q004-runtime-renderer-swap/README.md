@@ -68,22 +68,28 @@ ImGui와 Present는 Renderer와 같은 메인 스레드에서 실행합니다. W
 
 ## 빌드
 
-Visual Studio 2022와 CMake 기준입니다.
+Visual Studio 2026 기준입니다. CMake는 사용하지 않습니다.
 
 ```powershell
-cmake -S . -B build
-cmake --build build --config Release --target 00_START_TextureRendererExperiment
+git clone --branch v1.91.8-docking --depth 1 https://github.com/ocornut/imgui.git .\ThirdParty\imgui
+msbuild .\RuntimeRendererSwap.sln /m /p:Configuration=Release /p:Platform=x64
 ```
 
-CMake는 빌드 시스템 그 자체라기보다 빌드 파일 생성기입니다. 위 명령은 현재 환경에서 Visual Studio 솔루션과 프로젝트를 `build/`에 생성하고, 두 번째 명령이 MSBuild로 컴파일합니다.
+ImGui는 저장소에 복사해서 올리지 않고 `ThirdParty/imgui`에 지정 버전을 받습니다. Visual Studio에서는 `RuntimeRendererSwap.sln`을 열고 `Release | x64`로 빌드하면 됩니다. 시작 프로젝트는 `00_START_TextureRendererExperiment`입니다.
+
+```text
+Client/Private/       실행 파일과 DLL 교체 흐름
+Renderer/Public/      Host와 Renderer가 공유하는 C ABI
+Renderer/Private/     DX11/DX12 Renderer 구현
+ThirdParty/           로컬에서 받는 ImGui 의존성, Git 제외
+Texture/              실험용 DX11/DX12 텍스처
+```
 
 ## 실행
 
 ```powershell
-.\build\Release\real_dx_switch.exe
+.\x64\Release\real_dx_switch.exe
 ```
-
-환경에 따라 실행 파일과 DLL이 `build\Release` 대신 다른 구성 폴더에 생성될 수 있습니다.
 
 ## 이 기능을 만드는 실제 이유, 실행 환경 호환성
 
