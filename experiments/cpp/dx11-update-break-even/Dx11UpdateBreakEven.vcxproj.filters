@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup><Filter Include="Source Files"><UniqueIdentifier>{545D1EAC-2565-4645-BDEE-B2F4590FD4E8}</UniqueIdentifier></Filter><Filter Include="Header Files"><UniqueIdentifier>{A6E9DCC8-19B9-4F30-87B9-461FFBC18E44}</UniqueIdentifier></Filter><Filter Include="Shader Files"><UniqueIdentifier>{27A621DC-1006-4B1B-AB31-30589A20983D}</UniqueIdentifier></Filter></ItemGroup>
-  <ItemGroup><ClCompile Include="main.cpp"><Filter>Source Files</Filter></ClCompile><ClCompile Include="UpdateBenchmark.cpp"><Filter>Source Files</Filter></ClCompile></ItemGroup>
-  <ItemGroup><ClInclude Include="UpdateBenchmark.h"><Filter>Header Files</Filter></ClInclude></ItemGroup>
-  <ItemGroup><None Include="ComputeUpdate.hlsl"><Filter>Shader Files</Filter></None></ItemGroup>
+  <ItemGroup><ClCompile Include="Client\Private\main.cpp"><Filter>Source Files</Filter></ClCompile><ClCompile Include="Benchmark\Private\UpdateBenchmark.cpp"><Filter>Source Files</Filter></ClCompile></ItemGroup>
+  <ItemGroup><ClInclude Include="Benchmark\Public\UpdateBenchmark.h"><Filter>Header Files</Filter></ClInclude></ItemGroup>
+  <ItemGroup><None Include="Shader\ComputeUpdate.hlsl"><Filter>Shader Files</Filter></None></ItemGroup>
 </Project>
