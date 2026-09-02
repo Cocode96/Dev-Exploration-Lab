@@ -2,6 +2,7 @@
 
 #include "ApplicationContext.h"
 #include "CameraManager.h"
+#include "DebugUiManager.h"
 #include "FreeCamera.h"
 
 #include <d3dcompiler.h>
@@ -575,6 +576,8 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
         std::chrono::steady_clock::now() - cpu_start).count();
     m_device_context->End(m_frame_end_query.Get());
     m_device_context->End(m_disjoint_query.Get());
+
+    m_context->debug_ui_manager().render_draw_data();
 
     if (!m_pending_capture_path.empty())
     {

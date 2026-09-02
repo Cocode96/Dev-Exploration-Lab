@@ -3,12 +3,14 @@
   <ItemGroup>
     <Filter Include="Engine\Public"><UniqueIdentifier>{2A227DA4-2937-4ABC-9B15-0FCE7D476088}</UniqueIdentifier></Filter>
     <Filter Include="Engine\Private"><UniqueIdentifier>{E72836C1-9F69-41D3-8D73-F05981DF9CE4}</UniqueIdentifier></Filter>
+    <Filter Include="ThirdParty\ImGui"><UniqueIdentifier>{F478168B-EF55-40A0-8DB8-EC95D1538244}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Public\ApplicationContext.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\BenchmarkManager.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\CameraComponent.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\CameraManager.h"><Filter>Engine\Public</Filter></ClInclude>
+    <ClInclude Include="Engine\Public\DebugUiManager.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\EngineTypes.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\FreeCamera.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\FreeCameraControllerComponent.h"><Filter>Engine\Public</Filter></ClInclude>
@@ -20,12 +22,21 @@
     <ClInclude Include="Engine\Public\SceneManager.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\SkyComponent.h"><Filter>Engine\Public</Filter></ClInclude>
     <ClInclude Include="Engine\Public\TransformComponent.h"><Filter>Engine\Public</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imconfig.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imgui_internal.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imstb_rectpack.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imstb_textedit.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\imstb_truetype.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\backends\imgui_impl_dx11.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
+    <ClInclude Include="ThirdParty\imgui\backends\imgui_impl_win32.h"><Filter>ThirdParty\ImGui</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Engine\Private\ApplicationContext.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\BenchmarkManager.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\CameraComponent.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\CameraManager.cpp"><Filter>Engine\Private</Filter></ClCompile>
+    <ClCompile Include="Engine\Private\DebugUiManager.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\FreeCamera.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\FreeCameraControllerComponent.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\InputManager.cpp"><Filter>Engine\Private</Filter></ClCompile>
@@ -33,5 +44,11 @@
     <ClCompile Include="Engine\Private\Renderer.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\SceneManager.cpp"><Filter>Engine\Private</Filter></ClCompile>
     <ClCompile Include="Engine\Private\TransformComponent.cpp"><Filter>Engine\Private</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_tables.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_widgets.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\backends\imgui_impl_dx11.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\backends\imgui_impl_win32.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
   </ItemGroup>
 </Project>

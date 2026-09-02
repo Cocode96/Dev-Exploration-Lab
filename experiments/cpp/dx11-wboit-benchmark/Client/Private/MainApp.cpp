@@ -3,6 +3,7 @@
 #include "ApplicationContext.h"
 #include "BenchmarkManager.h"
 #include "CameraManager.h"
+#include "DebugUiManager.h"
 #include "EffectStressScene.h"
 #include "InputManager.h"
 #include "Renderer.h"
@@ -56,8 +57,11 @@ bool MainApp::initialize(HINSTANCE instance, int show_command)
         std::make_unique<EffectStressScene>(), *m_context))
         return false;
     m_context->scene_manager().change_scene(Engine::SceneType::Validation);
+    m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
+        "ApplicationContext assembled Input, Camera, Scene, Benchmark, Renderer and Debug UI modules.");
+    m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
+        "Select Particle Stress and Forced sorting failure for the clearest comparison.");
     m_previous_time = std::chrono::steady_clock::now();
-    m_last_title_update = m_previous_time;
     return true;
 }
 
@@ -115,18 +119,42 @@ void MainApp::update(float delta_time)
     if (!benchmark.is_running())
     {
         if (input.was_pressed(VK_F1))
+        {
             m_context->scene_manager().change_scene(Engine::SceneType::Validation);
+            m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
+                "Scene changed by F1: Crossing Geometry Validation.");
+        }
         if (input.was_pressed(VK_F2))
+        {
             m_context->scene_manager().change_scene(Engine::SceneType::EffectStress);
+            m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
+                "Scene changed by F2: Particle Sorting Stress.");
+        }
         if (input.was_pressed('1'))
+        {
             m_context->render_settings().transparency_mode = Engine::TransparencyMode::UnsortedAlpha;
+            m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
+                "Method selected by keyboard: Unsorted Alpha.");
+        }
         if (input.was_pressed('2'))
+        {
             m_context->render_settings().transparency_mode = Engine::TransparencyMode::ZSortedAlpha;
+            m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
+                "Method selected by keyboard: CPU Z-Sorted Alpha.");
+        }
         if (input.was_pressed('3'))
+        {
             m_context->render_settings().transparency_mode = Engine::TransparencyMode::Wboit;
+            m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
+                "Method selected by keyboard: Weighted Blended OIT.");
+        }
         if (input.was_pressed('R'))
+        {
             m_context->render_settings().reverse_submission_order =
                 !m_context->render_settings().reverse_submission_order;
+            m_context->debug_ui_manager().log(Engine::DebugLogLevel::Warning,
+                "Submission order toggled by keyboard.");
+        }
         if (input.was_pressed(VK_OEM_PLUS) || input.was_pressed(VK_ADD))
             adjust_instance_count(1);
         if (input.was_pressed(VK_OEM_MINUS) || input.was_pressed(VK_SUBTRACT))
@@ -141,11 +169,30 @@ void MainApp::update(float delta_time)
                 ? L"validation_" : L"stress_")
                  << scene.instance_count() << L"_capture.bmp";
             m_context->renderer().request_capture(m_output_directory / name.str());
+            m_context->debug_ui_manager().log(Engine::DebugLogLevel::Success,
+                "Frame capture requested by keyboard.");
         }
     }
+
+    auto& debug_ui = m_context->debug_ui_manager();
+    debug_ui.begin_frame();
+    debug_ui.render_workspace();
+    m_debug_panel.render(*m_context, m_output_directory);
+    debug_ui.render_log_panel();
+    debug_ui.end_frame();
+
     benchmark.prepare_frame(*m_context);
     m_context->scene_manager().active_scene().update(*m_context, delta_time);
-    m_context->camera_manager().update(input, delta_time);
+    if (m_debug_panel.camera_input_enabled()
+        && !debug_ui.wants_keyboard_input()
+        && !debug_ui.wants_mouse_input())
+    {
+        m_context->camera_manager().update(input, delta_time);
+    }
+    else
+    {
+        input.release_active_input();
+    }
     input.end_frame();
 }
 
@@ -154,7 +201,6 @@ void MainApp::render()
     const auto metrics = m_context->renderer().render_frame(
         m_context->scene_manager().active_scene().render_view(), m_context->render_settings());
     m_context->benchmark_manager().record_frame(*m_context, metrics);
-    update_window_title();
 }
 
 void MainApp::adjust_instance_count(int direction)
@@ -174,35 +220,27 @@ void MainApp::adjust_instance_count(int direction)
         choose(validation_counts);
     else
         choose(stress_counts);
-}
-
-void MainApp::update_window_title()
-{
-    const auto now = std::chrono::steady_clock::now();
-    if (now - m_last_title_update < std::chrono::milliseconds(150))
-        return;
-    m_last_title_update = now;
-    const auto& renderer = m_context->renderer();
-    const auto& metrics = renderer.last_metrics();
-    const auto& scene = m_context->scene_manager().active_scene();
-    std::wostringstream title;
-    title.setf(std::ios::fixed);
-    title.precision(3);
-    title << L"DX11 WBOIT | " << scene.name() << L" | "
-          << Engine::to_string(m_context->render_settings().transparency_mode)
-          << L" | N=" << scene.instance_count()
-          << L" | GPU " << metrics.gpu_total_ms << L" ms"
-          << L" | CPU sort " << metrics.cpu_sort_ms << L" ms"
-          << L" | Draws " << metrics.total_draw_calls
-          << L" | Order " << (m_context->render_settings().reverse_submission_order ? L"Reverse" : L"Forward")
-          << L" | " << m_context->benchmark_manager().status_text()
-          << L" | WASD move, RMB look, Q/E height | F1/F2 scene, 1/2/3 mode";
-    SetWindowTextW(m_window, title.str().c_str());
+    std::ostringstream message;
+    message << "Instance count changed by keyboard: " << scene.instance_count() << '.';
+    m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info, message.str());
 }
 
 LRESULT MainApp::handle_window_message(HWND window, UINT message, WPARAM w_param, LPARAM l_param)
 {
+    bool ui_captured_input = false;
     if (m_context)
+        ui_captured_input = m_context->debug_ui_manager().handle_window_message(
+            window, message, w_param, l_param);
+    const bool release_message = message == WM_KEYUP
+        || message == WM_SYSKEYUP
+        || message == WM_LBUTTONUP
+        || message == WM_RBUTTONUP
+        || message == WM_MBUTTONUP;
+    const bool keyboard_message = message == WM_KEYDOWN
+        || message == WM_SYSKEYDOWN
+        || message == WM_KEYUP
+        || message == WM_SYSKEYUP;
+    if (m_context && (!ui_captured_input || release_message || keyboard_message))
         m_context->input().handle_message(window, message, w_param, l_param);
     if (message == WM_KEYDOWN && w_param == VK_ESCAPE)
     {
@@ -214,6 +252,8 @@ LRESULT MainApp::handle_window_message(HWND window, UINT message, WPARAM w_param
         PostQuitMessage(0);
         return 0;
     }
+    if (ui_captured_input)
+        return 1;
     return DefWindowProcW(window, message, w_param, l_param);
 }
 

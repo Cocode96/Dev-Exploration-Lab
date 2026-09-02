@@ -14,6 +14,7 @@ public:
     bool was_pressed(int virtual_key) const;
     POINT mouse_delta() const noexcept { return m_mouse_delta; }
     bool is_mouse_look_active() const noexcept { return m_mouse_look_active; }
+    void release_active_input();
     void end_frame();
 
 private:

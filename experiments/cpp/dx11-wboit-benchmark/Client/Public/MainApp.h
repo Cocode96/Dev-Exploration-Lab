@@ -1,5 +1,7 @@
 #pragma once
 
+#include "BenchmarkDebugPanel.h"
+
 #include <Windows.h>
 
 #include <chrono>
@@ -30,15 +32,14 @@ private:
     bool create_main_window(HINSTANCE instance, int show_command);
     void update(float delta_time);
     void render();
-    void update_window_title();
     void adjust_instance_count(int direction);
     LRESULT handle_window_message(HWND window, UINT message, WPARAM w_param, LPARAM l_param);
     static LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM w_param, LPARAM l_param);
 
     HWND m_window{};
     std::unique_ptr<Engine::ApplicationContext> m_context;
+    BenchmarkDebugPanel m_debug_panel;
     std::filesystem::path m_output_directory;
     std::chrono::steady_clock::time_point m_previous_time{};
-    std::chrono::steady_clock::time_point m_last_title_update{};
 };
 }

@@ -33,6 +33,8 @@ public:
     const std::wstring& adapter_name() const noexcept { return m_adapter_name; }
     std::uint32_t width() const noexcept { return m_width; }
     std::uint32_t height() const noexcept { return m_height; }
+    ID3D11Device* device() const noexcept { return m_device.Get(); }
+    ID3D11DeviceContext* device_context() const noexcept { return m_device_context.Get(); }
 
 private:
     bool create_device_and_swap_chain(HWND window);

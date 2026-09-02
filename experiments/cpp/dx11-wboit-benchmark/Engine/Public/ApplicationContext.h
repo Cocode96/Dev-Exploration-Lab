@@ -11,6 +11,7 @@ namespace Engine
 {
 class BenchmarkManager;
 class CameraManager;
+class DebugUiManager;
 class InputManager;
 class Renderer;
 class SceneManager;
@@ -33,6 +34,7 @@ public:
     InputManager& input();
     SceneManager& scene_manager();
     BenchmarkManager& benchmark_manager();
+    DebugUiManager& debug_ui_manager();
     RenderSettings& render_settings() noexcept { return m_render_settings; }
     const RenderSettings& render_settings() const noexcept { return m_render_settings; }
 
@@ -42,6 +44,7 @@ private:
     std::unique_ptr<SceneManager> m_scene_manager;
     std::unique_ptr<BenchmarkManager> m_benchmark_manager;
     std::unique_ptr<Renderer> m_renderer;
+    std::unique_ptr<DebugUiManager> m_debug_ui_manager;
     RenderSettings m_render_settings{};
 };
 }

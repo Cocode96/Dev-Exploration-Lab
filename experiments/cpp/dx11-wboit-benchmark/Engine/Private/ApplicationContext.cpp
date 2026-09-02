@@ -2,6 +2,7 @@
 
 #include "BenchmarkManager.h"
 #include "CameraManager.h"
+#include "DebugUiManager.h"
 #include "InputManager.h"
 #include "Renderer.h"
 #include "SceneManager.h"
@@ -21,9 +22,13 @@ bool ApplicationContext::initialize(HWND window, std::uint32_t width, std::uint3
     m_scene_manager = std::make_unique<SceneManager>();
     m_benchmark_manager = std::make_unique<BenchmarkManager>();
     m_renderer = std::make_unique<Renderer>();
+    m_debug_ui_manager = std::make_unique<DebugUiManager>();
     m_benchmark_manager->initialize(output_directory);
-    return m_camera_manager->initialize(static_cast<float>(width) / static_cast<float>(height))
-        && m_renderer->initialize(*this, window, width, height, shader_path);
+    if (!m_camera_manager->initialize(static_cast<float>(width) / static_cast<float>(height))
+        || !m_renderer->initialize(*this, window, width, height, shader_path))
+        return false;
+    return m_debug_ui_manager->initialize(
+        window, m_renderer->device(), m_renderer->device_context());
 }
 
 CameraManager& ApplicationContext::camera_manager()
@@ -60,5 +65,11 @@ BenchmarkManager& ApplicationContext::benchmark_manager()
 {
     if (!m_benchmark_manager) throw std::logic_error("Benchmark manager is not initialized.");
     return *m_benchmark_manager;
+}
+
+DebugUiManager& ApplicationContext::debug_ui_manager()
+{
+    if (!m_debug_ui_manager) throw std::logic_error("Debug UI manager is not initialized.");
+    return *m_debug_ui_manager;
 }
 }

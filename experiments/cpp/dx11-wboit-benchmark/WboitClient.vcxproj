@@ -17,16 +17,17 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup><OutDir>$(ProjectDir)x64\$(Configuration)\</OutDir><IntDir>$(ProjectDir)x64\$(Configuration)\Client\</IntDir><TargetName>WboitBenchmark</TargetName></PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <ClCompile><WarningLevel>Level4</WarningLevel><SDLCheck>true</SDLCheck><PreprocessorDefinitions>_DEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><AdditionalIncludeDirectories>$(ProjectDir)Engine\Public;$(ProjectDir)Client\Public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile><WarningLevel>Level4</WarningLevel><SDLCheck>true</SDLCheck><PreprocessorDefinitions>_DEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><AdditionalIncludeDirectories>$(ProjectDir)Engine\Public;$(ProjectDir)Client\Public;$(ProjectDir)ThirdParty\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <Link><SubSystem>Windows</SubSystem><GenerateDebugInformation>true</GenerateDebugInformation><AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
     <PostBuildEvent><Command>copy /Y "$(ProjectDir)Shader\Transparency.hlsl" "$(OutDir)Shader_Transparency.hlsl"</Command></PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <ClCompile><WarningLevel>Level4</WarningLevel><FunctionLevelLinking>true</FunctionLevelLinking><IntrinsicFunctions>true</IntrinsicFunctions><SDLCheck>true</SDLCheck><PreprocessorDefinitions>NDEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><AdditionalIncludeDirectories>$(ProjectDir)Engine\Public;$(ProjectDir)Client\Public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
+    <ClCompile><WarningLevel>Level4</WarningLevel><FunctionLevelLinking>true</FunctionLevelLinking><IntrinsicFunctions>true</IntrinsicFunctions><SDLCheck>true</SDLCheck><PreprocessorDefinitions>NDEBUG;_WINDOWS;NOMINMAX;%(PreprocessorDefinitions)</PreprocessorDefinitions><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><AdditionalIncludeDirectories>$(ProjectDir)Engine\Public;$(ProjectDir)Client\Public;$(ProjectDir)ThirdParty\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories><AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions></ClCompile>
     <Link><SubSystem>Windows</SubSystem><EnableCOMDATFolding>true</EnableCOMDATFolding><OptimizeReferences>true</OptimizeReferences><GenerateDebugInformation>true</GenerateDebugInformation><AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
     <PostBuildEvent><Command>copy /Y "$(ProjectDir)Shader\Transparency.hlsl" "$(OutDir)Shader_Transparency.hlsl"</Command></PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Client\Public\BenchmarkDebugPanel.h" />
     <ClInclude Include="Client\Public\EffectStressScene.h" />
     <ClInclude Include="Client\Public\MainApp.h" />
     <ClInclude Include="Client\Public\SkyBox.h" />
@@ -35,6 +36,7 @@
     <ClInclude Include="Client\Public\WorldScene.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Client\Private\BenchmarkDebugPanel.cpp" />
     <ClCompile Include="Client\Private\Client.cpp" />
     <ClCompile Include="Client\Private\EffectStressScene.cpp" />
     <ClCompile Include="Client\Private\MainApp.cpp" />
@@ -43,7 +45,11 @@
     <ClCompile Include="Client\Private\ValidationScene.cpp" />
     <ClCompile Include="Client\Private\WorldScene.cpp" />
   </ItemGroup>
-  <ItemGroup><None Include="Shader\Transparency.hlsl" /></ItemGroup>
+  <ItemGroup>
+    <None Include="Docs\PROJECT_STRUCTURE.md" />
+    <None Include="README.md" />
+    <None Include="Shader\Transparency.hlsl" />
+  </ItemGroup>
   <ItemGroup><ProjectReference Include="WboitEngine.vcxproj"><Project>{3FB2950D-B8E0-4FF5-BE65-4665C2DA55CD}</Project></ProjectReference></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" /><ImportGroup Label="ExtensionTargets" />
 </Project>

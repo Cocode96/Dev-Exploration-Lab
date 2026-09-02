@@ -53,6 +53,17 @@ bool InputManager::was_pressed(int virtual_key) const
     return m_current[virtual_key] && !m_previous[virtual_key];
 }
 
+void InputManager::release_active_input()
+{
+    m_current.fill(false);
+    m_previous.fill(false);
+    m_mouse_delta = {};
+    m_has_mouse_position = false;
+    if (m_mouse_look_active)
+        ReleaseCapture();
+    m_mouse_look_active = false;
+}
+
 void InputManager::end_frame()
 {
     m_previous = m_current;
