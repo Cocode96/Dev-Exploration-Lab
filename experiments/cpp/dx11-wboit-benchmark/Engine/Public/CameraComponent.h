@@ -8,6 +8,7 @@ class CameraComponent final
 {
 public:
     void configure(float field_of_view_radians, float aspect_ratio, float near_plane, float far_plane);
+    void set_aspect_ratio(float aspect_ratio) noexcept;
     DirectX::XMMATRIX view_matrix(const TransformComponent& transform) const noexcept;
     DirectX::XMMATRIX projection_matrix() const noexcept;
     DirectX::XMVECTOR forward(const TransformComponent& transform) const noexcept;

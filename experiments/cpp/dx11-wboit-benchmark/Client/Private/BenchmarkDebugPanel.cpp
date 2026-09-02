@@ -326,7 +326,8 @@ void BenchmarkDebugPanel::render_experiment_controls(
             ? L"validation_" : L"stress_")
                   << active_scene.instance_count() << L'_'
                   << method_file_name(settings.transparency_mode)
-                  << L"_imgui.bmp";
+                  << (settings.reverse_submission_order ? L"_reverse" : L"_forward")
+                  << L"_scene.bmp";
         std::wstring safe_name = file_name.str();
         for (wchar_t& character : safe_name)
         {
@@ -335,7 +336,7 @@ void BenchmarkDebugPanel::render_experiment_controls(
         }
         context.renderer().request_capture(output_directory / safe_name);
         debug_ui.log(Engine::DebugLogLevel::Success,
-            "Frame capture requested. The image includes the runtime UI.");
+            "Scene-only frame capture requested. Runtime UI is excluded.");
     }
     ImGui::End();
 }
@@ -361,6 +362,8 @@ void BenchmarkDebugPanel::render_performance(Engine::ApplicationContext& context
     ImGui::Text("%s: %s", ui_text(language, "Method", "처리 방식"),
         method_name(mode, language));
     ImGui::Text("%s: %u", ui_text(language, "Instances", "인스턴스 수"), scene.instance_count());
+    ImGui::Text("%s: %u x %u", ui_text(language, "Scene View", "장면 화면"),
+        context.renderer().scene_width(), context.renderer().scene_height());
     ImGui::Separator();
 
     if (ImGui::BeginTable("PerformanceTable", 2,

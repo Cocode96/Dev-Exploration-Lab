@@ -26,6 +26,8 @@ public:
 
     bool initialize(ApplicationContext& context, HWND window, std::uint32_t width,
         std::uint32_t height, const std::filesystem::path& shader_path);
+    bool prepare_scene_view();
+    void request_scene_view_size(std::uint32_t width, std::uint32_t height) noexcept;
     FrameMetrics render_frame(const SceneRenderView& scene, const RenderSettings& settings);
     void request_capture(std::filesystem::path output_path);
 
@@ -35,10 +37,14 @@ public:
     std::uint32_t height() const noexcept { return m_height; }
     ID3D11Device* device() const noexcept { return m_device.Get(); }
     ID3D11DeviceContext* device_context() const noexcept { return m_device_context.Get(); }
+    ID3D11ShaderResourceView* scene_texture_srv() const noexcept { return m_scene_color_srv.Get(); }
+    std::uint32_t scene_width() const noexcept { return m_scene_width; }
+    std::uint32_t scene_height() const noexcept { return m_scene_height; }
 
 private:
     bool create_device_and_swap_chain(HWND window);
     bool create_render_targets();
+    bool create_scene_render_targets(std::uint32_t width, std::uint32_t height);
     bool create_pipeline(const std::filesystem::path& shader_path);
     bool create_geometry();
     bool create_queries();
@@ -53,11 +59,15 @@ private:
     void draw_wboit_accumulation();
     void draw_wboit_resolve();
     void bind_effect_pipeline(ID3D11PixelShader* pixel_shader, ID3D11BlendState* blend_state);
-    void save_back_buffer_bmp(const std::filesystem::path& path);
+    void save_scene_view_bmp(const std::filesystem::path& path);
 
     ApplicationContext* m_context{};
     std::uint32_t m_width{};
     std::uint32_t m_height{};
+    std::uint32_t m_scene_width{};
+    std::uint32_t m_scene_height{};
+    std::uint32_t m_requested_scene_width{};
+    std::uint32_t m_requested_scene_height{};
     std::uint32_t m_active_instance_count{};
     std::uint32_t m_terrain_index_count{};
     const MeshVertex* m_terrain_source{};
@@ -72,6 +82,9 @@ private:
     Microsoft::WRL::ComPtr<IDXGISwapChain1> m_swap_chain;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> m_back_buffer;
     Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_back_buffer_rtv;
+    Microsoft::WRL::ComPtr<ID3D11Texture2D> m_scene_color_texture;
+    Microsoft::WRL::ComPtr<ID3D11RenderTargetView> m_scene_color_rtv;
+    Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> m_scene_color_srv;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> m_depth_texture;
     Microsoft::WRL::ComPtr<ID3D11DepthStencilView> m_depth_dsv;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> m_capture_staging;

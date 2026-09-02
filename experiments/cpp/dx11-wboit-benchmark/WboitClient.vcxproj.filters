@@ -29,6 +29,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\PROJECT_STRUCTURE.md"><Filter>05.Docs</Filter></None>
+    <None Include="Docs\DISTRIBUTION_KO.md"><Filter>05.Docs</Filter></None>
     <None Include="README.md"><Filter>05.Docs</Filter></None>
     <None Include="Shader\Transparency.hlsl"><Filter>02.Shader</Filter></None>
   </ItemGroup>

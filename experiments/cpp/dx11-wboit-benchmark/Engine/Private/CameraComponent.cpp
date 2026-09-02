@@ -11,6 +11,12 @@ void CameraComponent::configure(float field_of_view_radians, float aspect_ratio,
     m_far_plane = far_plane;
 }
 
+void CameraComponent::set_aspect_ratio(float aspect_ratio) noexcept
+{
+    if (aspect_ratio > 0.0f)
+        m_aspect_ratio = aspect_ratio;
+}
+
 DirectX::XMVECTOR CameraComponent::forward(const TransformComponent& transform) const noexcept
 {
     const auto& rotation = transform.rotation();

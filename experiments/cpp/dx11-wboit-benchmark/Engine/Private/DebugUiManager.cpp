@@ -15,6 +15,7 @@ namespace
 {
 constexpr char workspace_window_name[] = "RuntimeDebugWorkspace";
 constexpr char dockspace_name[] = "RuntimeDebugDockspace";
+constexpr char scene_window_name[] = "Scene View";
 constexpr char experiment_window_name[] = "Experiment Controls";
 constexpr char performance_window_name[] = "Live Performance";
 constexpr char log_window_name[] = "Runtime Log";
@@ -104,6 +105,8 @@ void DebugUiManager::shutdown()
     m_initialized = false;
     m_frame_active = false;
     m_layout_initialized = false;
+    m_scene_view_hovered = false;
+    m_scene_dock_id = 0;
     m_controls_dock_id = 0;
     m_performance_dock_id = 0;
     m_log_dock_id = 0;
@@ -147,6 +150,38 @@ void DebugUiManager::render_workspace()
     ImGui::DockSpace(ImGui::GetID(dockspace_name), {0.0f, 0.0f},
         ImGuiDockNodeFlags_PassthruCentralNode);
     build_default_layout();
+    ImGui::End();
+}
+
+void DebugUiManager::render_scene_view(
+    ID3D11ShaderResourceView* scene_texture,
+    std::uint32_t texture_width,
+    std::uint32_t texture_height)
+{
+    if (!m_frame_active)
+        return;
+
+    m_scene_view_hovered = false;
+    set_next_window_default_dock(DebugUiDockRegion::Scene);
+    const bool korean = m_language == DebugUiLanguage::Korean;
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.0f, 0.0f});
+    ImGui::Begin(korean ? "장면 화면###Scene View" : "Scene View###Scene View", nullptr,
+        ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+    ImGui::PopStyleVar();
+
+    const ImVec2 available = ImGui::GetContentRegionAvail();
+    if (available.x >= 64.0f && available.y >= 64.0f)
+    {
+        m_requested_scene_width = static_cast<std::uint32_t>(available.x);
+        m_requested_scene_height = static_cast<std::uint32_t>(available.y);
+        if (scene_texture != nullptr && texture_width > 0 && texture_height > 0)
+        {
+            const ImTextureID texture_id = static_cast<ImTextureID>(
+                reinterpret_cast<std::uintptr_t>(scene_texture));
+            ImGui::Image(texture_id, available);
+            m_scene_view_hovered = ImGui::IsItemHovered();
+        }
+    }
     ImGui::End();
 }
 
@@ -208,6 +243,7 @@ void DebugUiManager::set_next_window_default_dock(DebugUiDockRegion region)
     ImGuiID dock_id{};
     switch (region)
     {
+    case DebugUiDockRegion::Scene: dock_id = m_scene_dock_id; break;
     case DebugUiDockRegion::Controls: dock_id = m_controls_dock_id; break;
     case DebugUiDockRegion::Performance: dock_id = m_performance_dock_id; break;
     case DebugUiDockRegion::Log: dock_id = m_log_dock_id; break;
@@ -366,9 +402,11 @@ void DebugUiManager::build_default_layout()
         nullptr, &center_id);
 
     ImGui::DockBuilderDockWindow(experiment_window_name, right_id);
+    ImGui::DockBuilderDockWindow(scene_window_name, center_id);
     ImGui::DockBuilderDockWindow(performance_window_name, log_id);
     ImGui::DockBuilderDockWindow(log_window_name, log_id);
     ImGui::DockBuilderFinish(dockspace_id);
+    m_scene_dock_id = center_id;
     m_controls_dock_id = right_id;
     m_performance_dock_id = log_id;
     m_log_dock_id = log_id;

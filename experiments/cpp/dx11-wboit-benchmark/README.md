@@ -48,6 +48,7 @@ Game objects are thin composition roots:
 - Renderer receives `SceneRenderView` and does not own or call game objects.
 - `DebugUiManager` owns the ImGui lifecycle, docking, bilingual state, input protection and runtime log.
 - `BenchmarkDebugPanel` is a replaceable project-specific panel stored by value in `MainApp`.
+- `Renderer` owns a dedicated scene color texture. ImGui displays its SRV inside `Scene View`, so tool panels never cover the benchmark image.
 
 Context-owned managers, scenes, and the active camera use explicit `std::unique_ptr` ownership. Direct3D resources use `Microsoft::WRL::ComPtr`. Components whose lifetime matches their game object are stored by value.
 
@@ -55,11 +56,13 @@ The detailed ownership tree, frame sequence, module responsibilities and replace
 
 ## Runtime debug workspace
 
+- Center: dedicated `Scene View` showing the renderer-owned scene texture
 - Right: scene selection, fully named transparency methods, particle stress settings, capture and benchmark actions
 - Bottom tabs: live CPU/GPU metrics and runtime log
-- Center: unobstructed 3D render view with free camera
 - Forced failure preset: intersecting ribbons plus two overlapping particle sheets with near-equal centers
 - Measurement boundary: ImGui and Present are outside the GPU timestamp range
+- Capture boundary: frame capture saves the scene texture only, without the debug UI
+- Camera boundary: free-camera input is accepted only while the pointer is over `Scene View` or a right-mouse look drag is active
 
 Optional keyboard shortcuts remain available: `F1/F2` scene, `1/2/3` method, `+/-` instances, `R` reverse order, `P` capture, `B` benchmark, `WASD` move, right mouse look and `Q/E` height.
 
@@ -97,7 +100,7 @@ Defaults are `pAlpha=1.8`, `kAlpha=6.0`, and `kDepth=2.5`.
 .\x64\Release\WboitBenchmark.exe
 ```
 
-The automated run writes `reports/local/windowed/windowed_benchmark.csv`. GPU timestamps include sky, terrain, and transparency rendering but exclude ImGui and swap-chain presentation. The current forced-sorting reference, paired forward/reverse images, and interpretation are stored in [`reports/reference/2026-09-02-rtx5060-forced-sorting-stress`](reports/reference/2026-09-02-rtx5060-forced-sorting-stress/SUMMARY.md).
+The automated run writes `reports/local/windowed/windowed_benchmark.csv`. GPU timestamps include sky, terrain, and transparency rendering but exclude ImGui and swap-chain presentation. `Scene View` requests its render-target size from the available dock content area and updates the camera aspect ratio. The current forced-sorting reference, paired forward/reverse images, and interpretation are stored in [`reports/reference/2026-09-02-rtx5060-forced-sorting-stress`](reports/reference/2026-09-02-rtx5060-forced-sorting-stress/SUMMARY.md).
 
 ## Reference result warning
 

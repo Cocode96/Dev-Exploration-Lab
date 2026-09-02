@@ -168,51 +168,116 @@ bool Renderer::create_render_targets()
         || !succeeded(m_device->CreateRenderTargetView(m_back_buffer.Get(), nullptr, &m_back_buffer_rtv)))
         return false;
 
-    D3D11_TEXTURE2D_DESC back_desc{};
-    m_back_buffer->GetDesc(&back_desc);
-    D3D11_TEXTURE2D_DESC staging_desc = back_desc;
+    m_requested_scene_width = m_width;
+    m_requested_scene_height = m_height;
+    return create_scene_render_targets(m_requested_scene_width, m_requested_scene_height);
+}
+
+bool Renderer::create_scene_render_targets(std::uint32_t width, std::uint32_t height)
+{
+    D3D11_TEXTURE2D_DESC scene_desc{};
+    scene_desc.Width = width;
+    scene_desc.Height = height;
+    scene_desc.MipLevels = 1;
+    scene_desc.ArraySize = 1;
+    scene_desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    scene_desc.SampleDesc.Count = 1;
+    scene_desc.Usage = D3D11_USAGE_DEFAULT;
+    scene_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+
+    ComPtr<ID3D11Texture2D> scene_color_texture;
+    ComPtr<ID3D11RenderTargetView> scene_color_rtv;
+    ComPtr<ID3D11ShaderResourceView> scene_color_srv;
+    if (!succeeded(m_device->CreateTexture2D(&scene_desc, nullptr, &scene_color_texture))
+        || !succeeded(m_device->CreateRenderTargetView(
+            scene_color_texture.Get(), nullptr, &scene_color_rtv))
+        || !succeeded(m_device->CreateShaderResourceView(
+            scene_color_texture.Get(), nullptr, &scene_color_srv)))
+        return false;
+
+    D3D11_TEXTURE2D_DESC staging_desc = scene_desc;
     staging_desc.Usage = D3D11_USAGE_STAGING;
     staging_desc.BindFlags = 0;
     staging_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-    staging_desc.MiscFlags = 0;
-    if (!succeeded(m_device->CreateTexture2D(&staging_desc, nullptr, &m_capture_staging)))
+    ComPtr<ID3D11Texture2D> capture_staging;
+    if (!succeeded(m_device->CreateTexture2D(&staging_desc, nullptr, &capture_staging)))
         return false;
 
     D3D11_TEXTURE2D_DESC depth_desc{};
-    depth_desc.Width = m_width;
-    depth_desc.Height = m_height;
+    depth_desc.Width = width;
+    depth_desc.Height = height;
     depth_desc.MipLevels = 1;
     depth_desc.ArraySize = 1;
     depth_desc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
     depth_desc.SampleDesc.Count = 1;
     depth_desc.Usage = D3D11_USAGE_DEFAULT;
     depth_desc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-    if (!succeeded(m_device->CreateTexture2D(&depth_desc, nullptr, &m_depth_texture))
-        || !succeeded(m_device->CreateDepthStencilView(m_depth_texture.Get(), nullptr, &m_depth_dsv)))
+    ComPtr<ID3D11Texture2D> depth_texture;
+    ComPtr<ID3D11DepthStencilView> depth_dsv;
+    if (!succeeded(m_device->CreateTexture2D(&depth_desc, nullptr, &depth_texture))
+        || !succeeded(m_device->CreateDepthStencilView(depth_texture.Get(), nullptr, &depth_dsv)))
         return false;
 
     D3D11_TEXTURE2D_DESC accum_desc{};
-    accum_desc.Width = m_width;
-    accum_desc.Height = m_height;
+    accum_desc.Width = width;
+    accum_desc.Height = height;
     accum_desc.MipLevels = 1;
     accum_desc.ArraySize = 1;
     accum_desc.Format = DXGI_FORMAT_R16G16B16A16_FLOAT;
     accum_desc.SampleDesc.Count = 1;
     accum_desc.Usage = D3D11_USAGE_DEFAULT;
     accum_desc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-    if (!succeeded(m_device->CreateTexture2D(&accum_desc, nullptr, &m_accum_color_texture))
-        || !succeeded(m_device->CreateRenderTargetView(m_accum_color_texture.Get(), nullptr, &m_accum_color_rtv))
-        || !succeeded(m_device->CreateShaderResourceView(m_accum_color_texture.Get(), nullptr, &m_accum_color_srv)))
+    ComPtr<ID3D11Texture2D> accum_color_texture;
+    ComPtr<ID3D11RenderTargetView> accum_color_rtv;
+    ComPtr<ID3D11ShaderResourceView> accum_color_srv;
+    if (!succeeded(m_device->CreateTexture2D(&accum_desc, nullptr, &accum_color_texture))
+        || !succeeded(m_device->CreateRenderTargetView(
+            accum_color_texture.Get(), nullptr, &accum_color_rtv))
+        || !succeeded(m_device->CreateShaderResourceView(
+            accum_color_texture.Get(), nullptr, &accum_color_srv)))
         return false;
 
     accum_desc.Format = DXGI_FORMAT_R16_FLOAT;
-    if (!succeeded(m_device->CreateTexture2D(&accum_desc, nullptr, &m_accum_weight_texture))
-        || !succeeded(m_device->CreateRenderTargetView(m_accum_weight_texture.Get(), nullptr, &m_accum_weight_rtv))
-        || !succeeded(m_device->CreateShaderResourceView(m_accum_weight_texture.Get(), nullptr, &m_accum_weight_srv)))
+    ComPtr<ID3D11Texture2D> accum_weight_texture;
+    ComPtr<ID3D11RenderTargetView> accum_weight_rtv;
+    ComPtr<ID3D11ShaderResourceView> accum_weight_srv;
+    if (!succeeded(m_device->CreateTexture2D(&accum_desc, nullptr, &accum_weight_texture))
+        || !succeeded(m_device->CreateRenderTargetView(
+            accum_weight_texture.Get(), nullptr, &accum_weight_rtv))
+        || !succeeded(m_device->CreateShaderResourceView(
+            accum_weight_texture.Get(), nullptr, &accum_weight_srv)))
         return false;
 
-    m_viewport = {0.0f, 0.0f, static_cast<float>(m_width), static_cast<float>(m_height), 0.0f, 1.0f};
+    m_scene_color_texture = std::move(scene_color_texture);
+    m_scene_color_rtv = std::move(scene_color_rtv);
+    m_scene_color_srv = std::move(scene_color_srv);
+    m_capture_staging = std::move(capture_staging);
+    m_depth_texture = std::move(depth_texture);
+    m_depth_dsv = std::move(depth_dsv);
+    m_accum_color_texture = std::move(accum_color_texture);
+    m_accum_color_rtv = std::move(accum_color_rtv);
+    m_accum_color_srv = std::move(accum_color_srv);
+    m_accum_weight_texture = std::move(accum_weight_texture);
+    m_accum_weight_rtv = std::move(accum_weight_rtv);
+    m_accum_weight_srv = std::move(accum_weight_srv);
+    m_scene_width = width;
+    m_scene_height = height;
+    m_viewport = {0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f};
     return true;
+}
+
+bool Renderer::prepare_scene_view()
+{
+    if (m_requested_scene_width == m_scene_width
+        && m_requested_scene_height == m_scene_height)
+        return true;
+    return create_scene_render_targets(m_requested_scene_width, m_requested_scene_height);
+}
+
+void Renderer::request_scene_view_size(std::uint32_t width, std::uint32_t height) noexcept
+{
+    m_requested_scene_width = (std::clamp)(width, 64u, 4096u);
+    m_requested_scene_height = (std::clamp)(height, 64u, 4096u);
 }
 
 bool Renderer::create_pipeline(const std::filesystem::path& shader_path)
@@ -436,7 +501,8 @@ void Renderer::update_frame_constants(const SceneRenderView& scene)
     DirectX::XMStoreFloat4(&constants.camera_forward, camera.forward(transform));
     constants.sky_zenith = scene.sky.zenith_color;
     constants.sky_horizon = scene.sky.horizon_color;
-    constants.resolution = {static_cast<float>(m_width), static_cast<float>(m_height)};
+    constants.resolution = {
+        static_cast<float>(m_scene_width), static_cast<float>(m_scene_height)};
     constants.alpha_mode = 0;
     constants.depth_mode = 1;
     constants.p_alpha = 1.8f;
@@ -447,7 +513,7 @@ void Renderer::update_frame_constants(const SceneRenderView& scene)
 
 void Renderer::draw_sky()
 {
-    ID3D11RenderTargetView* target = m_back_buffer_rtv.Get();
+    ID3D11RenderTargetView* target = m_scene_color_rtv.Get();
     m_device_context->OMSetRenderTargets(1, &target, nullptr);
     m_device_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
     m_device_context->OMSetDepthStencilState(m_depth_disabled_state.Get(), 0);
@@ -462,7 +528,7 @@ void Renderer::draw_sky()
 
 void Renderer::draw_terrain()
 {
-    ID3D11RenderTargetView* target = m_back_buffer_rtv.Get();
+    ID3D11RenderTargetView* target = m_scene_color_rtv.Get();
     m_device_context->OMSetRenderTargets(1, &target, m_depth_dsv.Get());
     m_device_context->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFFu);
     m_device_context->OMSetDepthStencilState(m_depth_write_state.Get(), 0);
@@ -502,7 +568,7 @@ void Renderer::bind_effect_pipeline(ID3D11PixelShader* pixel_shader, ID3D11Blend
 
 void Renderer::draw_alpha()
 {
-    ID3D11RenderTargetView* target = m_back_buffer_rtv.Get();
+    ID3D11RenderTargetView* target = m_scene_color_rtv.Get();
     m_device_context->OMSetRenderTargets(1, &target, m_depth_dsv.Get());
     bind_effect_pipeline(m_alpha_ps.Get(), m_alpha_blend.Get());
     m_device_context->DrawInstanced(6, m_active_instance_count, 0, 0);
@@ -525,7 +591,7 @@ void Renderer::draw_wboit_resolve()
     m_device_context->OMSetRenderTargets(2, null_targets, nullptr);
     const std::array<ID3D11ShaderResourceView*, 2> resources{m_accum_color_srv.Get(), m_accum_weight_srv.Get()};
     m_device_context->PSSetShaderResources(0, 2, resources.data());
-    ID3D11RenderTargetView* target = m_back_buffer_rtv.Get();
+    ID3D11RenderTargetView* target = m_scene_color_rtv.Get();
     m_device_context->OMSetRenderTargets(1, &target, nullptr);
     m_device_context->OMSetBlendState(m_alpha_blend.Get(), nullptr, 0xFFFFFFFFu);
     m_device_context->OMSetDepthStencilState(m_depth_disabled_state.Get(), 0);
@@ -550,7 +616,7 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
     m_device_context->End(m_frame_start_query.Get());
     m_device_context->RSSetViewports(1, &m_viewport);
     constexpr float clear_color[]{0.02f, 0.05f, 0.12f, 1.0f};
-    m_device_context->ClearRenderTargetView(m_back_buffer_rtv.Get(), clear_color);
+    m_device_context->ClearRenderTargetView(m_scene_color_rtv.Get(), clear_color);
     m_device_context->ClearDepthStencilView(m_depth_dsv.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
     const auto cpu_start = std::chrono::steady_clock::now();
@@ -577,13 +643,18 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
     m_device_context->End(m_frame_end_query.Get());
     m_device_context->End(m_disjoint_query.Get());
 
-    m_context->debug_ui_manager().render_draw_data();
-
     if (!m_pending_capture_path.empty())
     {
-        save_back_buffer_bmp(m_pending_capture_path);
+        save_scene_view_bmp(m_pending_capture_path);
         m_pending_capture_path.clear();
     }
+
+    ID3D11RenderTargetView* back_buffer_target = m_back_buffer_rtv.Get();
+    m_device_context->OMSetRenderTargets(1, &back_buffer_target, nullptr);
+    m_device_context->RSSetViewports(1, &m_viewport);
+    constexpr float ui_clear_color[]{0.035f, 0.045f, 0.06f, 1.0f};
+    m_device_context->ClearRenderTargetView(m_back_buffer_rtv.Get(), ui_clear_color);
+    m_context->debug_ui_manager().render_draw_data();
     m_swap_chain->Present(0, 0);
     m_device_context->Flush();
 
@@ -617,21 +688,23 @@ void Renderer::request_capture(std::filesystem::path output_path)
     m_pending_capture_path = std::move(output_path);
 }
 
-void Renderer::save_back_buffer_bmp(const std::filesystem::path& path)
+void Renderer::save_scene_view_bmp(const std::filesystem::path& path)
 {
-    m_device_context->CopyResource(m_capture_staging.Get(), m_back_buffer.Get());
+    m_device_context->CopyResource(m_capture_staging.Get(), m_scene_color_texture.Get());
     D3D11_MAPPED_SUBRESOURCE mapped{};
     if (FAILED(m_device_context->Map(m_capture_staging.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
         return;
-    std::vector<std::uint8_t> pixels(static_cast<std::size_t>(m_width) * m_height * 4);
-    for (std::uint32_t row = 0; row < m_height; ++row)
+    std::vector<std::uint8_t> pixels(
+        static_cast<std::size_t>(m_scene_width) * m_scene_height * 4);
+    for (std::uint32_t row = 0; row < m_scene_height; ++row)
     {
         const auto* source = static_cast<const std::uint8_t*>(mapped.pData)
             + static_cast<std::size_t>(row) * mapped.RowPitch;
-        auto* destination = pixels.data() + static_cast<std::size_t>(row) * m_width * 4;
-        std::memcpy(destination, source, static_cast<std::size_t>(m_width) * 4);
+        auto* destination = pixels.data()
+            + static_cast<std::size_t>(row) * m_scene_width * 4;
+        std::memcpy(destination, source, static_cast<std::size_t>(m_scene_width) * 4);
     }
     m_device_context->Unmap(m_capture_staging.Get(), 0);
-    write_bmp(path, m_width, m_height, pixels);
+    write_bmp(path, m_scene_width, m_scene_height, pixels);
 }
 }

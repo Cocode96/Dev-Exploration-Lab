@@ -5,6 +5,7 @@
 #include "CameraManager.h"
 #include "DebugUiManager.h"
 #include "EffectStressScene.h"
+#include "FreeCamera.h"
 #include "InputManager.h"
 #include "Renderer.h"
 #include "SceneManager.h"
@@ -116,6 +117,13 @@ void MainApp::update(float delta_time)
 {
     auto& input = m_context->input();
     auto& benchmark = m_context->benchmark_manager();
+    auto& renderer = m_context->renderer();
+    if (renderer.prepare_scene_view())
+    {
+        m_context->camera_manager().active_camera().set_aspect_ratio(
+            static_cast<float>(renderer.scene_width()) /
+            static_cast<float>(renderer.scene_height()));
+    }
     if (!benchmark.is_running())
     {
         if (input.was_pressed(VK_F1))
@@ -177,6 +185,10 @@ void MainApp::update(float delta_time)
     auto& debug_ui = m_context->debug_ui_manager();
     debug_ui.begin_frame();
     debug_ui.render_workspace();
+    debug_ui.render_scene_view(
+        renderer.scene_texture_srv(), renderer.scene_width(), renderer.scene_height());
+    renderer.request_scene_view_size(
+        debug_ui.requested_scene_width(), debug_ui.requested_scene_height());
     m_debug_panel.render(*m_context, m_output_directory);
     debug_ui.render_log_panel();
     debug_ui.end_frame();
@@ -184,8 +196,7 @@ void MainApp::update(float delta_time)
     benchmark.prepare_frame(*m_context);
     m_context->scene_manager().active_scene().update(*m_context, delta_time);
     if (m_debug_panel.camera_input_enabled()
-        && !debug_ui.wants_keyboard_input()
-        && !debug_ui.wants_mouse_input())
+        && (debug_ui.scene_view_hovered() || input.is_mouse_look_active()))
     {
         m_context->camera_manager().update(input, delta_time);
     }
@@ -231,6 +242,9 @@ LRESULT MainApp::handle_window_message(HWND window, UINT message, WPARAM w_param
     if (m_context)
         ui_captured_input = m_context->debug_ui_manager().handle_window_message(
             window, message, w_param, l_param);
+    const bool scene_view_input = m_context
+        && (m_context->debug_ui_manager().scene_view_hovered()
+            || m_context->input().is_mouse_look_active());
     const bool release_message = message == WM_KEYUP
         || message == WM_SYSKEYUP
         || message == WM_LBUTTONUP
@@ -240,7 +254,8 @@ LRESULT MainApp::handle_window_message(HWND window, UINT message, WPARAM w_param
         || message == WM_SYSKEYDOWN
         || message == WM_KEYUP
         || message == WM_SYSKEYUP;
-    if (m_context && (!ui_captured_input || release_message || keyboard_message))
+    if (m_context
+        && (!ui_captured_input || release_message || keyboard_message || scene_view_input))
         m_context->input().handle_message(window, message, w_param, l_param);
     if (message == WM_KEYDOWN && w_param == VK_ESCAPE)
     {

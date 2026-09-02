@@ -37,8 +37,8 @@ wWinMain
 | `CameraManager` | FreeCamera | 활성 카메라 갱신 | 카메라 정책 |
 | `SceneManager` | Scenes | 장면 등록과 전환 | 장면 저장소 |
 | `BenchmarkManager` | Samples, phases | 워밍업, 측정, CSV 출력 | 측정 시나리오 |
-| `Renderer` | DX11 resources | 장면 렌더링, GPU 타임스탬프, 캡처 | 그래픽스 백엔드 |
-| `DebugUiManager` | ImGui context, log | UI 생명주기, 도킹, 언어, 로그 | 런타임 디버그 UI 기반 |
+| `Renderer` | DX11 resources, scene texture | 장면 렌더링, GPU 타임스탬프, 장면 전용 캡처 | 그래픽스 백엔드 |
+| `DebugUiManager` | ImGui context, log | UI 생명주기, 도킹, Scene View, 언어, 로그 | 런타임 디버그 UI 기반 |
 | `BenchmarkDebugPanel` | UI-only state | 실험 조작, 방법 설명, 실시간 지표 | 프로젝트별 디버그 패널 |
 | `EffectStressScene` | Procedural instances | 자연 볼륨과 강제 정렬 실패 데이터 생성 | 실험 데이터 생성기 |
 
@@ -50,22 +50,27 @@ Win32 messages
   -> InputManager
 
 MainApp::update
+  -> apply previous Scene View size to Renderer targets
+  -> update camera aspect ratio
   -> build ImGui frame
+  -> Scene View records its available size for the next frame
   -> apply clicked benchmark settings
   -> BenchmarkManager::prepare_frame
   -> Scene::update
   -> CameraManager::update, only when UI and manual lock allow it
 
 MainApp::render
-  -> Renderer draws sky, terrain and transparency
+  -> Renderer draws sky, terrain and transparency to the scene texture
   -> GPU timestamp range ends
+  -> optional capture copies the scene texture only
+  -> bind and clear the swap-chain back buffer
+  -> Scene View samples the scene texture SRV
   -> DebugUiManager draws ImGui
-  -> optional capture
   -> Present
   -> BenchmarkManager records the measured scene metrics
 ```
 
-ImGui와 `Present`는 GPU 타임스탬프 범위 밖에 둔다. 런타임 도구 자체의 비용이 WBOIT 비교 결과에 섞이지 않도록 하기 위해서다.
+ImGui와 `Present`는 GPU 타임스탬프 범위 밖에 둔다. 런타임 도구 자체의 비용이 WBOIT 비교 결과에 섞이지 않도록 하기 위해서다. `Renderer`가 장면 텍스처를 소유하고 `DebugUiManager`는 해당 SRV를 비소유로 받아 표시한다. 도킹 레이아웃이 바뀌어도 장면 렌더 타깃과 카메라 종횡비가 다음 프레임에 함께 갱신된다.
 
 ## Reusable UI split
 
@@ -77,6 +82,7 @@ Reusable engine module
     Win32 + DX11 backend
     Debug-Hell theme
     Dockspace
+    Scene View
     English / Korean state
     Runtime log
     Input capture protection

@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\PROJECT_STRUCTURE.md" />
+    <None Include="Docs\DISTRIBUTION_KO.md" />
     <None Include="README.md" />
     <None Include="Shader\Transparency.hlsl" />
   </ItemGroup>

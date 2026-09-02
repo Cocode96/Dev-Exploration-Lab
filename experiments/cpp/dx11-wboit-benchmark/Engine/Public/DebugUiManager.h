@@ -10,6 +10,7 @@
 
 struct ID3D11Device;
 struct ID3D11DeviceContext;
+struct ID3D11ShaderResourceView;
 
 namespace Engine
 {
@@ -29,6 +30,7 @@ enum class DebugUiLanguage
 
 enum class DebugUiDockRegion
 {
+    Scene,
     Controls,
     Performance,
     Log
@@ -55,6 +57,8 @@ public:
 
     void begin_frame();
     void render_workspace();
+    void render_scene_view(ID3D11ShaderResourceView* scene_texture,
+        std::uint32_t texture_width, std::uint32_t texture_height);
     void render_log_panel();
     void end_frame();
     void render_draw_data();
@@ -63,6 +67,9 @@ public:
     bool handle_window_message(HWND window, UINT message, WPARAM w_param, LPARAM l_param);
     bool wants_keyboard_input() const;
     bool wants_mouse_input() const;
+    bool scene_view_hovered() const noexcept { return m_scene_view_hovered; }
+    std::uint32_t requested_scene_width() const noexcept { return m_requested_scene_width; }
+    std::uint32_t requested_scene_height() const noexcept { return m_requested_scene_height; }
 
     void log(DebugLogLevel level, std::string message);
     void clear_log();
@@ -82,9 +89,13 @@ private:
     bool m_frame_active{};
     bool m_layout_initialized{};
     bool m_scroll_log_to_bottom{};
+    bool m_scene_view_hovered{};
+    std::uint32_t m_scene_dock_id{};
     std::uint32_t m_controls_dock_id{};
     std::uint32_t m_performance_dock_id{};
     std::uint32_t m_log_dock_id{};
+    std::uint32_t m_requested_scene_width{1280};
+    std::uint32_t m_requested_scene_height{720};
     std::chrono::steady_clock::time_point m_start_time{};
     std::deque<DebugLogEntry> m_log_entries;
     DebugUiLanguage m_language{DebugUiLanguage::English};
