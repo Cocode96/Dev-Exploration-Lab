@@ -1,0 +1,27 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.11112.53
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{BC8A1FFA-BEE3-4634-8014-F334798102B3}") = "Engine", "WboitEngine.vcxproj", "{3FB2950D-B8E0-4FF5-BE65-4665C2DA55CD}"
+EndProject
+Project("{BC8A1FFA-BEE3-4634-8014-F334798102B3}") = "00_START_WboitClient", "WboitClient.vcxproj", "{87C85F83-FCF4-45C3-89BA-C7A93F3E0A3B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3FB2950D-B8E0-4FF5-BE65-4665C2DA55CD}.Debug|x64.ActiveCfg = Debug|x64
+		{3FB2950D-B8E0-4FF5-BE65-4665C2DA55CD}.Debug|x64.Build.0 = Debug|x64
+		{3FB2950D-B8E0-4FF5-BE65-4665C2DA55CD}.Release|x64.ActiveCfg = Release|x64
+		{3FB2950D-B8E0-4FF5-BE65-4665C2DA55CD}.Release|x64.Build.0 = Release|x64
+		{87C85F83-FCF4-45C3-89BA-C7A93F3E0A3B}.Debug|x64.ActiveCfg = Debug|x64
+		{87C85F83-FCF4-45C3-89BA-C7A93F3E0A3B}.Debug|x64.Build.0 = Debug|x64
+		{87C85F83-FCF4-45C3-89BA-C7A93F3E0A3B}.Release|x64.ActiveCfg = Release|x64
+		{87C85F83-FCF4-45C3-89BA-C7A93F3E0A3B}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

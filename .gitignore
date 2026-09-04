@@ -2,5 +2,9 @@
 Thumbs.db
 .idea/
 .vscode/
+*.vcxproj.user
 AGENTS.md
 experiments/cpp/windows/dll/q004-runtime-renderer-swap/build/
+experiments/cpp/dx11-wboit-benchmark/x64/
+experiments/cpp/dx11-wboit-benchmark/.vs/
+experiments/cpp/dx11-wboit-benchmark/reports/local/

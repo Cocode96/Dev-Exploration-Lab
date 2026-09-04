@@ -1,0 +1,4 @@
+metric,value,interpretation
+alpha_forward_vs_reverse_rmse,0.05724967,order sensitivity of conventional unsorted alpha
+wboit_forward_vs_reverse_rmse,0.00030777,order sensitivity of additive WBOIT accumulation
+wboit_vs_object_center_zsort_rmse,0.15763601,distance from object-center Z-sort; not a correctness score
