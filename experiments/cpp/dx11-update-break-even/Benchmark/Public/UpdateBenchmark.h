@@ -33,7 +33,9 @@ struct BENCHMARK_RESULT
 {
     uint32_t iUpdateCount = 0;
     double fCPUSingleUS = 0.0;
+    double fCPUSingleP95US = 0.0;
     double fCPUWorkersUS = 0.0;
+    double fCPUWorkersP95US = 0.0;
     double fGPUSubmitUS = 0.0;
     double fGPUKernelUS = 0.0;
     double fGPUWallUS = 0.0;
@@ -79,6 +81,7 @@ private:
     static void Update_Range(std::span<EFFECT_UPDATE_DATA> Datas, float fTimeDelta);
     static std::vector<EFFECT_UPDATE_DATA> Create_UpdateDatas(uint32_t iUpdateCount);
     static double Get_Median(std::vector<double> Values);
+    static double Get_Percentile(std::vector<double> Values, double fPercentile);
     static double Get_Checksum(std::span<const EFFECT_UPDATE_DATA> Datas);
 
 private:
