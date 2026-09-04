@@ -13,12 +13,26 @@ class ApplicationContext;
 class BenchmarkManager final
 {
 public:
+    struct ResultSummary
+    {
+        SceneType scene{};
+        TransparencyMode mode{};
+        std::uint32_t instance_count{};
+        double gpu_total_mean_ms{};
+        double gpu_total_p95_ms{};
+        double cpu_sort_mean_ms{};
+        std::uint32_t total_draw_calls{};
+        std::uint32_t transparency_draw_calls{};
+    };
+
     void initialize(std::filesystem::path output_directory);
     void start(ApplicationContext& context);
     void prepare_frame(ApplicationContext& context);
     void record_frame(ApplicationContext& context, const FrameMetrics& metrics);
+    std::vector<ResultSummary> result_summaries() const;
 
     bool is_running() const noexcept { return m_running; }
+    bool has_results() const noexcept { return !m_results.empty(); }
     std::wstring status_text() const;
 
 private:
