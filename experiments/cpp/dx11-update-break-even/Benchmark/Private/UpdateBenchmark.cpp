@@ -4,6 +4,7 @@
 #include <dxgi.h>
 
 #include <algorithm>
+#include <cmath>
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -25,6 +26,32 @@ namespace
     {
         uint32_t iHardwareThreadCount = std::thread::hardware_concurrency();
         return iHardwareThreadCount > 1 ? iHardwareThreadCount - 1 : 1;
+    }
+
+    std::string Convert_ToUTF8(const wchar_t* pText)
+    {
+        int iLength = WideCharToMultiByte(CP_UTF8, 0, pText, -1, nullptr, 0, nullptr, nullptr);
+
+        if (iLength <= 1)
+            return {};
+
+        std::string Text(static_cast<size_t>(iLength), '\0');
+        WideCharToMultiByte(CP_UTF8, 0, pText, -1, Text.data(), iLength, nullptr, nullptr);
+        Text.pop_back();
+        return Text;
+    }
+
+    void Print_Progress(size_t iCompletedCount, size_t iTotalCount)
+    {
+        constexpr size_t PROGRESS_WIDTH = 30;
+        size_t iFilledLength = iCompletedCount * PROGRESS_WIDTH / iTotalCount;
+        size_t iPercent = iCompletedCount * 100 / iTotalCount;
+
+        std::cout << "측정 진행 ["
+            << std::string(iFilledLength, '#')
+            << std::string(PROGRESS_WIDTH - iFilledLength, '-')
+            << "] " << std::setw(3) << iPercent << "% "
+            << '(' << iCompletedCount << '/' << iTotalCount << ')' << std::endl;
     }
 
     struct FRAME_DESC
@@ -168,7 +195,7 @@ HRESULT CUpdateBenchmark::Initialize(const std::filesystem::path& ShaderPath)
         SUCCEEDED(pDXGIDevice->GetAdapter(pAdapter.GetAddressOf())) &&
         SUCCEEDED(pAdapter->GetDesc(&AdapterDesc)))
     {
-        std::wcout << L"GPU: " << AdapterDesc.Description << std::endl;
+        std::cout << "사용 GPU: " << Convert_ToUTF8(AdapterDesc.Description) << std::endl;
     }
 
     if (FAILED(Ready_ComputeShader(ShaderPath)))
@@ -192,11 +219,19 @@ HRESULT CUpdateBenchmark::Run(const std::filesystem::path& ReportPath)
     std::vector<BENCHMARK_RESULT> Results;
     std::vector<BENCHMARK_SAMPLE> Samples;
 
-    std::cout << "DX11 Update Break-even Experiment" << std::endl;
-    std::cout << "Worker count: " << Get_WorkerCount() << std::endl;
+    std::cout << "DX11 Update 손익분기점 실험" << std::endl;
+    std::cout << "작업 스레드 수: " << Get_WorkerCount() << std::endl;
+    std::cout << "시간 단위: us(마이크로초), ns/개(Update 하나당 나노초)" << std::endl;
+    std::cout << "비교 기준: CPU는 중앙값, GPU는 완료 대기까지 포함한 시간" << std::endl;
+    std::cout << "Update 수식: v' = v + g*dt, p' = p + v'*dt, r' = r + w*dt" << std::endl;
+    std::cout << "비용 모델: 단일 = N*C, 워커 = 분배/동기화 + (N/W)*C, GPU = 제출 + 실행 + 대기" << std::endl;
+    std::cout << "손익분기점: 비교 방식의 전체 시간이 CPU 단일 시간보다 작아지는 첫 N" << std::endl;
+    std::cout << "------------------------------------------------------------" << std::endl;
+    Print_Progress(0, UpdateCounts.size());
 
-    for (uint32_t iUpdateCount : UpdateCounts)
+    for (size_t iUpdateIndex = 0; iUpdateIndex < UpdateCounts.size(); ++iUpdateIndex)
     {
+        uint32_t iUpdateCount = UpdateCounts[iUpdateIndex];
         std::vector<double> CPUSingleValues;
         std::vector<double> CPUWorkerValues;
         std::vector<double> GPUSubmitValues;
@@ -246,7 +281,9 @@ HRESULT CUpdateBenchmark::Run(const std::filesystem::path& ReportPath)
         BENCHMARK_RESULT Result;
         Result.iUpdateCount = iUpdateCount;
         Result.fCPUSingleUS = Get_Median(CPUSingleValues);
+        Result.fCPUSingleP95US = Get_Percentile(CPUSingleValues, 0.95);
         Result.fCPUWorkersUS = Get_Median(CPUWorkerValues);
+        Result.fCPUWorkersP95US = Get_Percentile(CPUWorkerValues, 0.95);
         Result.fGPUSubmitUS = Get_Median(GPUSubmitValues);
         Result.fGPUKernelUS = Get_Median(GPUKernelValues);
         Result.fGPUWallUS = Get_Median(GPUWallValues);
@@ -255,12 +292,33 @@ HRESULT CUpdateBenchmark::Run(const std::filesystem::path& ReportPath)
         // CPU 계산이 최적화로 제거되지 않았는지 마지막 데이터에서 값을 확인한다.
         double fChecksum = Get_Checksum(SingleDatas) + Get_Checksum(WorkerDatas);
 
-        std::cout << std::setw(7) << iUpdateCount
-            << " | single " << std::fixed << std::setprecision(3) << Result.fCPUSingleUS << " us"
-            << " | workers " << Result.fCPUWorkersUS << " us"
-            << " | gpu kernel " << Result.fGPUKernelUS << " us"
-            << " | gpu wall " << Result.fGPUWallUS << " us"
-            << " | checksum " << fChecksum << std::endl;
+        double fCPUSingleNS = Result.fCPUSingleUS * 1000.0 / iUpdateCount;
+        double fCPUWorkersNS = Result.fCPUWorkersUS * 1000.0 / iUpdateCount;
+        const char* pFastest = "CPU 단일";
+        double fFastestUS = Result.fCPUSingleUS;
+
+        if (Result.fCPUWorkersUS < fFastestUS)
+        {
+            pFastest = "CPU 워커";
+            fFastestUS = Result.fCPUWorkersUS;
+        }
+
+        if (Result.fGPUWallUS < fFastestUS)
+            pFastest = "GPU";
+
+        std::cout << '[' << iUpdateCount << "개 Update]" << std::endl
+            << "  CPU 단일 : 중앙 " << std::fixed << std::setprecision(3) << std::setw(9) << Result.fCPUSingleUS
+            << " us | p95 " << std::setw(9) << Result.fCPUSingleP95US
+            << " us | " << std::setw(8) << fCPUSingleNS << " ns/개" << std::endl
+            << "  CPU 워커 : 중앙 " << std::setw(9) << Result.fCPUWorkersUS
+            << " us | p95 " << std::setw(9) << Result.fCPUWorkersP95US
+            << " us | " << std::setw(8) << fCPUWorkersNS << " ns/개" << std::endl
+            << "  GPU      : 실행 " << std::setw(9) << Result.fGPUKernelUS
+            << " us | 완료 대기 포함 " << std::setw(9) << Result.fGPUWallUS << " us" << std::endl
+            << "  가장 빠름: " << pFastest << " | 결과 검증값: " << fChecksum << std::endl
+            << "------------------------------------------------------------" << std::endl;
+
+        Print_Progress(iUpdateIndex + 1, UpdateCounts.size());
     }
 
     std::filesystem::create_directories(ReportPath.parent_path());
@@ -285,21 +343,76 @@ HRESULT CUpdateBenchmark::Run(const std::filesystem::path& ReportPath)
     if (!SummaryReport)
         return E_FAIL;
 
-    SummaryReport << "update_count,cpu_single_us,cpu_workers_us,gpu_submit_us,gpu_kernel_us,gpu_wall_us\n";
+    SummaryReport << "update_count,cpu_single_us,cpu_single_p95_us,cpu_single_ns_per_update,"
+        "cpu_workers_us,cpu_workers_p95_us,cpu_workers_ns_per_update,"
+        "gpu_submit_us,gpu_kernel_us,gpu_wall_us\n";
     SummaryReport << std::fixed << std::setprecision(6);
 
     for (const BENCHMARK_RESULT& Result : Results)
     {
         SummaryReport << Result.iUpdateCount << ','
-            << Result.fCPUSingleUS << ','
-            << Result.fCPUWorkersUS << ','
+            << Result.fCPUSingleUS << ',' << Result.fCPUSingleP95US << ','
+            << (Result.fCPUSingleUS * 1000.0 / Result.iUpdateCount) << ','
+            << Result.fCPUWorkersUS << ',' << Result.fCPUWorkersP95US << ','
+            << (Result.fCPUWorkersUS * 1000.0 / Result.iUpdateCount) << ','
             << Result.fGPUSubmitUS << ','
             << Result.fGPUKernelUS << ','
             << Result.fGPUWallUS << '\n';
     }
 
-    std::cout << "Raw report: " << ReportPath.string() << std::endl;
-    std::cout << "Summary report: " << SummaryPath.string() << std::endl;
+    auto WorkerBreakEven = std::find_if(Results.begin(), Results.end(), [](const BENCHMARK_RESULT& Result)
+        { return Result.fCPUWorkersUS < Result.fCPUSingleUS; });
+    auto GPUBreakEven = std::find_if(Results.begin(), Results.end(), [](const BENCHMARK_RESULT& Result)
+        { return Result.fGPUWallUS < Result.fCPUSingleUS; });
+
+    std::cout << std::endl << "실험 요약" << std::endl;
+    std::cout << "  CPU 워커가 CPU 단일보다 빨라진 첫 측정 구간: ";
+
+    if (WorkerBreakEven != Results.end())
+        std::cout << WorkerBreakEven->iUpdateCount << "개" << std::endl;
+    else
+        std::cout << "측정 범위에서 없음" << std::endl;
+
+    std::cout << "  GPU 완료 대기 포함 시간이 CPU 단일보다 빨라진 첫 측정 구간: ";
+
+    if (GPUBreakEven != Results.end())
+        std::cout << GPUBreakEven->iUpdateCount << "개" << std::endl;
+    else
+        std::cout << "측정 범위에서 없음" << std::endl;
+
+    constexpr size_t GRAPH_WIDTH = 30;
+    std::cout << std::endl << "상대 실행 시간 그래프" << std::endl;
+    std::cout << "  같은 Update 개수 안에서 비교합니다. 막대가 짧을수록 빠릅니다." << std::endl;
+
+    for (const BENCHMARK_RESULT& Result : Results)
+    {
+        double fMaxUS = std::max({ Result.fCPUSingleUS, Result.fCPUWorkersUS, Result.fGPUWallUS });
+        double fMinUS = std::min({ Result.fCPUSingleUS, Result.fCPUWorkersUS, Result.fGPUWallUS });
+
+        auto PrintBar = [fMaxUS, fMinUS](const char* pName, double fElapsedUS)
+        {
+            size_t iBarLength = std::max<size_t>(1,
+                static_cast<size_t>(std::ceil(fElapsedUS / fMaxUS * GRAPH_WIDTH)));
+
+            std::cout << "    " << std::left << std::setw(9) << pName << "| "
+                << std::string(iBarLength, '#')
+                << " " << std::right << std::fixed << std::setprecision(3)
+                << fElapsedUS << " us";
+
+            if (fElapsedUS == fMinUS)
+                std::cout << "  <- 가장 빠름";
+
+            std::cout << std::endl;
+        };
+
+        std::cout << "  [" << Result.iUpdateCount << "개]" << std::endl;
+        PrintBar("CPU 단일", Result.fCPUSingleUS);
+        PrintBar("CPU 워커", Result.fCPUWorkersUS);
+        PrintBar("GPU", Result.fGPUWallUS);
+    }
+
+    std::cout << "반복별 원본 결과: " << ReportPath.string() << std::endl;
+    std::cout << "중앙값 요약 결과: " << SummaryPath.string() << std::endl;
     return S_OK;
 }
 
@@ -354,6 +467,14 @@ double CUpdateBenchmark::Get_Median(std::vector<double> Values)
 {
     std::sort(Values.begin(), Values.end());
     return Values[Values.size() / 2];
+}
+
+double CUpdateBenchmark::Get_Percentile(std::vector<double> Values, double fPercentile)
+{
+    std::sort(Values.begin(), Values.end());
+
+    size_t iIndex = static_cast<size_t>(std::ceil(fPercentile * Values.size())) - 1;
+    return Values[std::min(iIndex, Values.size() - 1)];
 }
 
 double CUpdateBenchmark::Get_Checksum(std::span<const EFFECT_UPDATE_DATA> Datas)
