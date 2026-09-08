@@ -13,7 +13,7 @@ class ApplicationContext;
 
 class IScene
 {
-public:
+  public:
     virtual ~IScene() = default;
 
     virtual bool initialize(ApplicationContext& context) = 0;
@@ -22,5 +22,6 @@ public:
     virtual SceneRenderView render_view() const = 0;
     virtual void set_instance_count(uint32_t count) = 0;
     virtual uint32_t instance_count() const = 0;
+    virtual void set_benchmark_motion(float, uint32_t, float) {}
 };
-}
+} // namespace Engine

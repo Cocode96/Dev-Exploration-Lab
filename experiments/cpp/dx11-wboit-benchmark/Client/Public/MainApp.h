@@ -39,6 +39,7 @@ private:
     static LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM w_param, LPARAM l_param);
 
     HWND m_window{};
+    bool m_command_benchmark{};
     unique_ptr<Engine::ApplicationContext> m_context;
     BenchmarkDebugPanel m_debug_panel;
     filesystem::path m_output_directory;

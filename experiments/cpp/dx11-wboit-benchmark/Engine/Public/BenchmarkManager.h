@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Engine_Struct.h"
+#include "Engine_Benchmark_Struct.h"
+#include "TransformComponent.h"
 
 #include <filesystem>
 #include <string>
@@ -14,7 +16,7 @@ class ApplicationContext;
 
 class BenchmarkManager final
 {
-public:
+  public:
     struct ResultSummary
     {
         SceneType scene{};
@@ -25,10 +27,15 @@ public:
         double cpu_sort_mean_ms{};
         uint32_t total_draw_calls{};
         uint32_t transparency_draw_calls{};
+        double gpu_max_ms{};
+        unsigned repeat{};
     };
 
     void initialize(filesystem::path output_directory);
     void start(ApplicationContext& context);
+    void cancel(ApplicationContext& context);
+    BenchmarkSettings& settings() { return m_settings; }
+    const string& last_error() const { return m_error; }
     void prepare_frame(ApplicationContext& context);
     void record_frame(ApplicationContext& context, const FrameMetrics& metrics);
     vector<ResultSummary> result_summaries() const;
@@ -37,12 +44,13 @@ public:
     bool has_results() const noexcept { return !m_results.empty(); }
     wstring status_text() const;
 
-private:
+  private:
     struct Phase
     {
         SceneType scene{};
         TransparencyMode mode{};
         uint32_t instance_count{};
+        unsigned repeat{};
     };
 
     struct PhaseResult
@@ -53,6 +61,7 @@ private:
 
     void complete_current_phase(ApplicationContext& context);
     void write_results() const;
+    void restore(ApplicationContext& context);
 
     filesystem::path m_output_directory;
     vector<Phase> m_phases;
@@ -64,6 +73,8 @@ private:
     SceneType m_previous_scene{SceneType::Validation};
     RenderSettings m_previous_settings{};
     uint32_t m_previous_instance_count{};
-
+    BenchmarkSettings m_settings{}, m_active_settings{};
+    TransformComponent m_previous_camera;
+    string m_error;
 };
-}
+} // namespace Engine
