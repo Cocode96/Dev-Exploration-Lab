@@ -1,6 +1,6 @@
 #pragma once
 
-#include "EngineTypes.h"
+#include "Engine_Struct.h"
 
 #include <Windows.h>
 
@@ -9,6 +9,8 @@
 
 namespace Engine
 {
+using namespace std;
+
 class BenchmarkManager;
 class CameraManager;
 class DebugUiManager;
@@ -25,8 +27,8 @@ public:
     ApplicationContext(const ApplicationContext&) = delete;
     ApplicationContext& operator=(const ApplicationContext&) = delete;
 
-    bool initialize(HWND window, std::uint32_t width, std::uint32_t height,
-        const std::filesystem::path& shader_path, const std::filesystem::path& output_directory);
+    bool initialize(HWND window, uint32_t width, uint32_t height,
+        const filesystem::path& shader_path, const filesystem::path& output_directory);
 
     Renderer& renderer();
     CameraManager& camera_manager();
@@ -39,12 +41,12 @@ public:
     const RenderSettings& render_settings() const noexcept { return m_render_settings; }
 
 private:
-    std::unique_ptr<InputManager> m_input_manager;
-    std::unique_ptr<CameraManager> m_camera_manager;
-    std::unique_ptr<SceneManager> m_scene_manager;
-    std::unique_ptr<BenchmarkManager> m_benchmark_manager;
-    std::unique_ptr<Renderer> m_renderer;
-    std::unique_ptr<DebugUiManager> m_debug_ui_manager;
+    unique_ptr<InputManager> m_input_manager;
+    unique_ptr<CameraManager> m_camera_manager;
+    unique_ptr<SceneManager> m_scene_manager;
+    unique_ptr<BenchmarkManager> m_benchmark_manager;
+    unique_ptr<Renderer> m_renderer;
+    unique_ptr<DebugUiManager> m_debug_ui_manager;
     RenderSettings m_render_settings{};
 };
 }

@@ -5,13 +5,15 @@
 
 namespace Client
 {
+using namespace std;
+
 WorldScene::WorldScene() = default;
 WorldScene::~WorldScene() = default;
 
 bool WorldScene::initialize_world()
 {
-    m_sky_box = std::make_unique<SkyBox>();
-    m_terrain = std::make_unique<Terrain>();
+    m_sky_box = make_unique<SkyBox>();
+    m_terrain = make_unique<Terrain>();
     return true;
 }
 

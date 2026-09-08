@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Windows.h>
+#include "Engine_DebugUi_Struct.h"
 
 #include <chrono>
 #include <cstddef>
@@ -14,34 +15,7 @@ struct ID3D11ShaderResourceView;
 
 namespace Engine
 {
-enum class DebugLogLevel
-{
-    Info,
-    Success,
-    Warning,
-    Error
-};
-
-enum class DebugUiLanguage
-{
-    English,
-    Korean
-};
-
-enum class DebugUiDockRegion
-{
-    Scene,
-    Controls,
-    Performance,
-    Log
-};
-
-struct DebugLogEntry
-{
-    DebugLogLevel level{DebugLogLevel::Info};
-    double elapsed_seconds{};
-    std::string message;
-};
+using namespace std;
 
 class DebugUiManager final
 {
@@ -58,7 +32,7 @@ public:
     void begin_frame();
     void render_workspace();
     void render_scene_view(ID3D11ShaderResourceView* scene_texture,
-        std::uint32_t texture_width, std::uint32_t texture_height);
+        uint32_t texture_width, uint32_t texture_height);
     void render_log_panel();
     void end_frame();
     void render_draw_data();
@@ -68,10 +42,10 @@ public:
     bool wants_keyboard_input() const;
     bool wants_mouse_input() const;
     bool scene_view_hovered() const noexcept { return m_scene_view_hovered; }
-    std::uint32_t requested_scene_width() const noexcept { return m_requested_scene_width; }
-    std::uint32_t requested_scene_height() const noexcept { return m_requested_scene_height; }
+    uint32_t requested_scene_width() const noexcept { return m_requested_scene_width; }
+    uint32_t requested_scene_height() const noexcept { return m_requested_scene_height; }
 
-    void log(DebugLogLevel level, std::string message);
+    void log(DebugLogLevel level, string message);
     void clear_log();
     void toggle_language();
 
@@ -82,7 +56,6 @@ private:
     void apply_debug_hell_theme();
     void build_default_layout();
 
-    static constexpr std::size_t max_log_entries = 512;
 
     HWND m_window{};
     bool m_initialized{};
@@ -90,14 +63,14 @@ private:
     bool m_layout_initialized{};
     bool m_scroll_log_to_bottom{};
     bool m_scene_view_hovered{};
-    std::uint32_t m_scene_dock_id{};
-    std::uint32_t m_controls_dock_id{};
-    std::uint32_t m_performance_dock_id{};
-    std::uint32_t m_log_dock_id{};
-    std::uint32_t m_requested_scene_width{1280};
-    std::uint32_t m_requested_scene_height{720};
-    std::chrono::steady_clock::time_point m_start_time{};
-    std::deque<DebugLogEntry> m_log_entries;
+    uint32_t m_scene_dock_id{};
+    uint32_t m_controls_dock_id{};
+    uint32_t m_performance_dock_id{};
+    uint32_t m_log_dock_id{};
+    uint32_t m_requested_scene_width{1280};
+    uint32_t m_requested_scene_height{720};
+    chrono::steady_clock::time_point m_start_time{};
+    deque<DebugLogEntry> m_log_entries;
     DebugUiLanguage m_language{DebugUiLanguage::English};
 };
 }

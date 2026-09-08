@@ -1,4 +1,6 @@
 #include "DebugUiManager.h"
+#include "Engine_DebugUi_Function.h"
+#include "Engine_DebugUi_Constant.h"
 
 #include "imgui.h"
 #include "imgui_internal.h"
@@ -11,42 +13,10 @@
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(
     HWND window, UINT message, WPARAM w_param, LPARAM l_param);
 
-namespace
-{
-constexpr char workspace_window_name[] = "RuntimeDebugWorkspace";
-constexpr char dockspace_name[] = "RuntimeDebugDockspace";
-constexpr char scene_window_name[] = "Scene View";
-constexpr char experiment_window_name[] = "Experiment Controls";
-constexpr char performance_window_name[] = "Live Performance";
-constexpr char log_window_name[] = "Runtime Log";
-
-ImVec4 log_color(Engine::DebugLogLevel level)
-{
-    switch (level)
-    {
-    case Engine::DebugLogLevel::Success: return {0.33f, 0.78f, 0.71f, 1.0f};
-    case Engine::DebugLogLevel::Warning: return {0.96f, 0.72f, 0.20f, 1.0f};
-    case Engine::DebugLogLevel::Error: return {0.96f, 0.35f, 0.38f, 1.0f};
-    case Engine::DebugLogLevel::Info:
-    default: return {0.72f, 0.78f, 0.84f, 1.0f};
-    }
-}
-
-const char* log_label(Engine::DebugLogLevel level)
-{
-    switch (level)
-    {
-    case Engine::DebugLogLevel::Success: return "PASS";
-    case Engine::DebugLogLevel::Warning: return "WARN";
-    case Engine::DebugLogLevel::Error: return "ERROR";
-    case Engine::DebugLogLevel::Info:
-    default: return "INFO";
-    }
-}
-}
-
 namespace Engine
 {
+using namespace std;
+
 DebugUiManager::~DebugUiManager()
 {
     shutdown();
@@ -87,7 +57,7 @@ bool DebugUiManager::initialize(
     }
 
     m_window = window;
-    m_start_time = std::chrono::steady_clock::now();
+    m_start_time = chrono::steady_clock::now();
     m_initialized = true;
     log(DebugLogLevel::Success, "Runtime Debug UI initialized.");
     return true;
@@ -132,20 +102,11 @@ void DebugUiManager::render_workspace()
     ImGui::SetNextWindowSize(viewport->Size);
     ImGui::SetNextWindowViewport(viewport->ID);
 
-    constexpr ImGuiWindowFlags flags = ImGuiWindowFlags_NoDocking |
-        ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoCollapse |
-        ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove |
-        ImGuiWindowFlags_NoSavedSettings |
-        ImGuiWindowFlags_NoBringToFrontOnFocus |
-        ImGuiWindowFlags_NoNavFocus |
-        ImGuiWindowFlags_NoBackground;
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0.0f, 0.0f});
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-    ImGui::Begin(workspace_window_name, nullptr, flags);
+    ImGui::Begin(workspace_window_name, nullptr, workspace_window_flags);
     ImGui::PopStyleVar(3);
     ImGui::DockSpace(ImGui::GetID(dockspace_name), {0.0f, 0.0f},
         ImGuiDockNodeFlags_PassthruCentralNode);
@@ -155,8 +116,8 @@ void DebugUiManager::render_workspace()
 
 void DebugUiManager::render_scene_view(
     ID3D11ShaderResourceView* scene_texture,
-    std::uint32_t texture_width,
-    std::uint32_t texture_height)
+    uint32_t texture_width,
+    uint32_t texture_height)
 {
     if (!m_frame_active)
         return;
@@ -172,12 +133,12 @@ void DebugUiManager::render_scene_view(
     const ImVec2 available = ImGui::GetContentRegionAvail();
     if (available.x >= 64.0f && available.y >= 64.0f)
     {
-        m_requested_scene_width = static_cast<std::uint32_t>(available.x);
-        m_requested_scene_height = static_cast<std::uint32_t>(available.y);
+        m_requested_scene_width = static_cast<uint32_t>(available.x);
+        m_requested_scene_height = static_cast<uint32_t>(available.y);
         if (scene_texture != nullptr && texture_width > 0 && texture_height > 0)
         {
             const ImTextureID texture_id = static_cast<ImTextureID>(
-                reinterpret_cast<std::uintptr_t>(scene_texture));
+                reinterpret_cast<uintptr_t>(scene_texture));
             ImGui::Image(texture_id, available);
             m_scene_view_hovered = ImGui::IsItemHovered();
         }
@@ -296,14 +257,14 @@ bool DebugUiManager::wants_mouse_input() const
     return m_initialized && ImGui::GetIO().WantCaptureMouse;
 }
 
-void DebugUiManager::log(DebugLogLevel level, std::string message)
+void DebugUiManager::log(DebugLogLevel level, string message)
 {
     if (m_log_entries.size() >= max_log_entries)
         m_log_entries.pop_front();
     const double elapsed_seconds = m_initialized
-        ? std::chrono::duration<double>(std::chrono::steady_clock::now() - m_start_time).count()
+        ? chrono::duration<double>(chrono::steady_clock::now() - m_start_time).count()
         : 0.0;
-    m_log_entries.push_back({level, elapsed_seconds, std::move(message)});
+    m_log_entries.push_back({level, elapsed_seconds, move(message)});
     m_scroll_log_to_bottom = true;
 }
 

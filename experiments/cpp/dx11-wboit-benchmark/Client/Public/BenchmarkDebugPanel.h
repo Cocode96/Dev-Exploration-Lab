@@ -9,16 +9,18 @@ class ApplicationContext;
 
 namespace Client
 {
+using namespace std;
+
 class BenchmarkDebugPanel final
 {
 public:
     void render(Engine::ApplicationContext& context,
-        const std::filesystem::path& output_directory);
+        const filesystem::path& output_directory);
     bool camera_input_enabled() const noexcept { return m_camera_input_enabled; }
 
 private:
     void render_experiment_controls(Engine::ApplicationContext& context,
-        const std::filesystem::path& output_directory);
+        const filesystem::path& output_directory);
     void render_performance(Engine::ApplicationContext& context);
     void render_benchmark_result(Engine::ApplicationContext& context);
 

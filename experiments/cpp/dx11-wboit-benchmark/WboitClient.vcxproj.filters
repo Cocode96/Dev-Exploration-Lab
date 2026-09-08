@@ -2,30 +2,50 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="00.MainApp"><UniqueIdentifier>{C6868CB0-3781-4C1E-BA11-A54EA313F96F}</UniqueIdentifier></Filter>
+    <Filter Include="00.MainApp\EntryPoint"><UniqueIdentifier>{2B6A0235-D4AE-40CF-B700-DC793CC47B14}</UniqueIdentifier></Filter>
+    <Filter Include="00.MainApp\MainApp"><UniqueIdentifier>{AEE95668-4332-47CC-AB53-78B14A85A38C}</UniqueIdentifier></Filter>
     <Filter Include="01.Scene"><UniqueIdentifier>{C31C6F20-C3E4-4A17-9A46-750A9AE45299}</UniqueIdentifier></Filter>
+    <Filter Include="01.Scene\EffectStressScene"><UniqueIdentifier>{76909062-742B-46A3-AC97-C5CFF59BA52E}</UniqueIdentifier></Filter>
+    <Filter Include="01.Scene\ValidationScene"><UniqueIdentifier>{512DF246-ADAE-4D89-B72F-940193B1ECED}</UniqueIdentifier></Filter>
+    <Filter Include="01.Scene\WorldScene"><UniqueIdentifier>{B6BCBC8E-1A0B-4E4E-8C43-C1CA51126716}</UniqueIdentifier></Filter>
     <Filter Include="02.Shader"><UniqueIdentifier>{756FD859-8FEF-43BF-8F20-8BFE419CC2D4}</UniqueIdentifier></Filter>
     <Filter Include="03.GameObject"><UniqueIdentifier>{92B91EB4-1A53-44D4-B5AB-AFB761DA5A50}</UniqueIdentifier></Filter>
+    <Filter Include="03.GameObject\SkyBox"><UniqueIdentifier>{6A9125A9-873A-4E49-8EAA-0181B5FEAC3F}</UniqueIdentifier></Filter>
+    <Filter Include="03.GameObject\Terrain"><UniqueIdentifier>{934D2465-2666-4CE6-8486-B3AEFBEC00C6}</UniqueIdentifier></Filter>
     <Filter Include="04.DebugUi"><UniqueIdentifier>{72383EE8-4D5A-4ED0-95C6-CE49A2F5CC7F}</UniqueIdentifier></Filter>
+    <Filter Include="04.DebugUi\BenchmarkDebugPanel"><UniqueIdentifier>{C5FE552B-D4D9-4C5B-8577-6D2C333B7A73}</UniqueIdentifier></Filter>
     <Filter Include="05.Docs"><UniqueIdentifier>{A6B37443-1E91-4E4F-A18E-2B25974148FB}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions"><UniqueIdentifier>{B8B440A7-F90B-4E75-81D1-D3709316A083}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions\Constants"><UniqueIdentifier>{7758E311-D33C-48AE-923F-5E1CF534D306}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions\Constants\Common"><UniqueIdentifier>{52DEB288-FF25-43CC-A6FD-6F5CD5D051BD}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions\Constants\Effect"><UniqueIdentifier>{9E9F65DB-50C1-4901-BC01-ABACBCD6FF57}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions\Enums"><UniqueIdentifier>{D9D0ED89-A212-4DB8-AD21-DFB8A24ECF04}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions\Enums\Common"><UniqueIdentifier>{38871407-ADAB-4767-BFC7-3625CED88A59}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions\Functions"><UniqueIdentifier>{63000860-3680-4452-B772-A93695C5CF35}</UniqueIdentifier></Filter>
+    <Filter Include="06.Definitions\Functions\Common"><UniqueIdentifier>{356D432F-52EC-451B-8800-6E2E15E8F198}</UniqueIdentifier></Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Client\Public\MainApp.h"><Filter>00.MainApp</Filter></ClInclude>
-    <ClInclude Include="Client\Public\BenchmarkDebugPanel.h"><Filter>04.DebugUi</Filter></ClInclude>
-    <ClInclude Include="Client\Public\EffectStressScene.h"><Filter>01.Scene</Filter></ClInclude>
-    <ClInclude Include="Client\Public\ValidationScene.h"><Filter>01.Scene</Filter></ClInclude>
-    <ClInclude Include="Client\Public\WorldScene.h"><Filter>01.Scene</Filter></ClInclude>
-    <ClInclude Include="Client\Public\SkyBox.h"><Filter>03.GameObject</Filter></ClInclude>
-    <ClInclude Include="Client\Public\Terrain.h"><Filter>03.GameObject</Filter></ClInclude>
+    <ClInclude Include="Client\Public\Client_Function.h"><Filter>06.Definitions\Functions\Common</Filter></ClInclude>
+    <ClInclude Include="Client\Public\Client_Enum.h"><Filter>06.Definitions\Enums\Common</Filter></ClInclude>
+    <ClInclude Include="Client\Public\Client_Constant.h"><Filter>06.Definitions\Constants\Common</Filter></ClInclude>
+    <ClInclude Include="Client\Public\Client_Effect_Constant.h"><Filter>06.Definitions\Constants\Effect</Filter></ClInclude>
+    <ClInclude Include="Client\Public\BenchmarkDebugPanel.h"><Filter>04.DebugUi\BenchmarkDebugPanel</Filter></ClInclude>
+    <ClInclude Include="Client\Public\EffectStressScene.h"><Filter>01.Scene\EffectStressScene</Filter></ClInclude>
+    <ClInclude Include="Client\Public\MainApp.h"><Filter>00.MainApp\MainApp</Filter></ClInclude>
+    <ClInclude Include="Client\Public\SkyBox.h"><Filter>03.GameObject\SkyBox</Filter></ClInclude>
+    <ClInclude Include="Client\Public\Terrain.h"><Filter>03.GameObject\Terrain</Filter></ClInclude>
+    <ClInclude Include="Client\Public\ValidationScene.h"><Filter>01.Scene\ValidationScene</Filter></ClInclude>
+    <ClInclude Include="Client\Public\WorldScene.h"><Filter>01.Scene\WorldScene</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Client\Private\Client.cpp"><Filter>00.MainApp</Filter></ClCompile>
-    <ClCompile Include="Client\Private\MainApp.cpp"><Filter>00.MainApp</Filter></ClCompile>
-    <ClCompile Include="Client\Private\BenchmarkDebugPanel.cpp"><Filter>04.DebugUi</Filter></ClCompile>
-    <ClCompile Include="Client\Private\EffectStressScene.cpp"><Filter>01.Scene</Filter></ClCompile>
-    <ClCompile Include="Client\Private\ValidationScene.cpp"><Filter>01.Scene</Filter></ClCompile>
-    <ClCompile Include="Client\Private\WorldScene.cpp"><Filter>01.Scene</Filter></ClCompile>
-    <ClCompile Include="Client\Private\SkyBox.cpp"><Filter>03.GameObject</Filter></ClCompile>
-    <ClCompile Include="Client\Private\Terrain.cpp"><Filter>03.GameObject</Filter></ClCompile>
+    <ClCompile Include="Client\Private\BenchmarkDebugPanel.cpp"><Filter>04.DebugUi\BenchmarkDebugPanel</Filter></ClCompile>
+    <ClCompile Include="Client\Private\Client.cpp"><Filter>00.MainApp\EntryPoint</Filter></ClCompile>
+    <ClCompile Include="Client\Private\EffectStressScene.cpp"><Filter>01.Scene\EffectStressScene</Filter></ClCompile>
+    <ClCompile Include="Client\Private\MainApp.cpp"><Filter>00.MainApp\MainApp</Filter></ClCompile>
+    <ClCompile Include="Client\Private\SkyBox.cpp"><Filter>03.GameObject\SkyBox</Filter></ClCompile>
+    <ClCompile Include="Client\Private\Terrain.cpp"><Filter>03.GameObject\Terrain</Filter></ClCompile>
+    <ClCompile Include="Client\Private\ValidationScene.cpp"><Filter>01.Scene\ValidationScene</Filter></ClCompile>
+    <ClCompile Include="Client\Private\WorldScene.cpp"><Filter>01.Scene\WorldScene</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Docs\PROJECT_STRUCTURE.md"><Filter>05.Docs</Filter></None>

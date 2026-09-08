@@ -1,4 +1,5 @@
 #include "EffectStressScene.h"
+#include "Client_Effect_Constant.h"
 
 #include <DirectXMath.h>
 
@@ -8,6 +9,9 @@
 
 namespace Client
 {
+using namespace std;
+using namespace DirectX;
+
 bool EffectStressScene::initialize(Engine::ApplicationContext&)
 {
     if (!initialize_world())
@@ -20,9 +24,9 @@ void EffectStressScene::update(Engine::ApplicationContext&, float)
 {
 }
 
-void EffectStressScene::set_instance_count(std::uint32_t count)
+void EffectStressScene::set_instance_count(uint32_t count)
 {
-    count = (std::max)(64u, (std::min)(count, 16384u));
+    count = (max)(64u, (min)(count, 16384u));
     if (count != m_instances.size())
         rebuild(count);
 }
@@ -35,27 +39,21 @@ void EffectStressScene::set_pattern(ParticleStressPattern pattern)
     rebuild(instance_count());
 }
 
-void EffectStressScene::rebuild(std::uint32_t count)
+void EffectStressScene::rebuild(uint32_t count)
 {
-    static constexpr std::array<DirectX::XMFLOAT3, 8> palette{
-        DirectX::XMFLOAT3{0.95f, 0.18f, 0.23f}, DirectX::XMFLOAT3{0.12f, 0.65f, 1.00f},
-        DirectX::XMFLOAT3{0.95f, 0.75f, 0.10f}, DirectX::XMFLOAT3{0.55f, 0.20f, 0.95f},
-        DirectX::XMFLOAT3{0.12f, 0.90f, 0.55f}, DirectX::XMFLOAT3{1.00f, 0.35f, 0.70f},
-        DirectX::XMFLOAT3{0.95f, 0.50f, 0.12f}, DirectX::XMFLOAT3{0.35f, 0.90f, 0.95f}
-    };
 
     m_instances.clear();
     m_instances.reserve(count);
 
     if (m_pattern == ParticleStressPattern::SortingFailure)
     {
-        const std::uint32_t crossing_count = (std::min)(count, 48u);
-        for (std::uint32_t index = 0; index < crossing_count; ++index)
+        const uint32_t crossing_count = (min)(count, 48u);
+        for (uint32_t index = 0; index < crossing_count; ++index)
         {
-            const auto color = palette[index % palette.size()];
+            const auto color = effect_palette[index % effect_palette.size()];
             const float ratio = static_cast<float>(index) /
-                static_cast<float>((std::max)(crossing_count, 1u));
-            const float yaw = ratio * DirectX::XM_PI;
+                static_cast<float>((max)(crossing_count, 1u));
+            const float yaw = ratio * XM_PI;
             const float height = 2.3f + static_cast<float>(index % 4) * 0.48f;
             const float center_offset = static_cast<float>(static_cast<int>(index % 3) - 1) * 0.025f;
             m_instances.push_back({
@@ -66,22 +64,22 @@ void EffectStressScene::rebuild(std::uint32_t count)
             });
         }
 
-        std::mt19937 random(0xFA11EDu + count);
-        std::uniform_real_distribution<float> horizontal(-7.5f, 7.5f);
-        std::uniform_real_distribution<float> height(0.8f, 6.4f);
-        std::uniform_real_distribution<float> jitter(-0.18f, 0.18f);
-        std::uniform_real_distribution<float> size(0.75f, 1.85f);
-        std::uniform_real_distribution<float> angle(0.0f, DirectX::XM_2PI);
+        mt19937 random(0xFA11EDu + count);
+        uniform_real_distribution<float> horizontal(-7.5f, 7.5f);
+        uniform_real_distribution<float> height(0.8f, 6.4f);
+        uniform_real_distribution<float> jitter(-0.18f, 0.18f);
+        uniform_real_distribution<float> size(0.75f, 1.85f);
+        uniform_real_distribution<float> angle(0.0f, XM_2PI);
         while (m_instances.size() < count)
         {
-            const std::size_t index = m_instances.size();
+            const size_t index = m_instances.size();
             const bool first_sheet = index % 2 == 0;
             const float x = horizontal(random);
             const float y = height(random);
             const float sheet_depth = first_sheet
                 ? 8.0f + x * 0.26f
                 : 8.0f - x * 0.26f;
-            const auto color = first_sheet ? palette[0] : palette[1];
+            const auto color = first_sheet ? effect_palette[0] : effect_palette[1];
             const float particle_size = size(random);
             m_instances.push_back({
                 {x, y, sheet_depth + jitter(random), 1.0f},
@@ -93,17 +91,17 @@ void EffectStressScene::rebuild(std::uint32_t count)
         return;
     }
 
-    std::mt19937 random(0xC0C0DEu + count);
-    std::uniform_real_distribution<float> horizontal(-10.0f, 10.0f);
-    std::uniform_real_distribution<float> height(0.45f, 7.5f);
-    std::uniform_real_distribution<float> depth(2.0f, 20.0f);
-    std::uniform_real_distribution<float> size(0.30f, 1.25f);
-    std::uniform_real_distribution<float> angle(0.0f, DirectX::XM_2PI);
-    std::uniform_real_distribution<float> alpha(0.18f, 0.58f);
+    mt19937 random(0xC0C0DEu + count);
+    uniform_real_distribution<float> horizontal(-10.0f, 10.0f);
+    uniform_real_distribution<float> height(0.45f, 7.5f);
+    uniform_real_distribution<float> depth(2.0f, 20.0f);
+    uniform_real_distribution<float> size(0.30f, 1.25f);
+    uniform_real_distribution<float> angle(0.0f, XM_2PI);
+    uniform_real_distribution<float> alpha(0.18f, 0.58f);
     while (m_instances.size() < count)
     {
-        const std::size_t index = m_instances.size();
-        const auto color = palette[index % palette.size()];
+        const size_t index = m_instances.size();
+        const auto color = effect_palette[index % effect_palette.size()];
         const float width = size(random);
         m_instances.push_back({
             {horizontal(random), height(random), depth(random), 1.0f}, {width, width},

@@ -1,4 +1,6 @@
 #include "MainApp.h"
+#include "Client_Constant.h"
+#include "Engine_Function.h"
 
 #include "ApplicationContext.h"
 #include "BenchmarkManager.h"
@@ -15,18 +17,13 @@
 #include <array>
 #include <sstream>
 
-namespace
-{
-constexpr std::uint32_t window_width = 1280;
-constexpr std::uint32_t window_height = 720;
-constexpr wchar_t window_class_name[] = L"WboitBenchmarkWindow";
-}
-
 namespace Client
 {
-std::unique_ptr<MainApp> MainApp::create(HINSTANCE instance, int show_command)
+using namespace std;
+
+unique_ptr<MainApp> MainApp::create(HINSTANCE instance, int show_command)
 {
-    std::unique_ptr<MainApp> application(new MainApp());
+    unique_ptr<MainApp> application(new MainApp());
     if (!application->initialize(instance, show_command))
         return nullptr;
     return application;
@@ -41,28 +38,28 @@ bool MainApp::initialize(HINSTANCE instance, int show_command)
 
     wchar_t executable_path[MAX_PATH]{};
     GetModuleFileNameW(nullptr, executable_path, MAX_PATH);
-    const std::filesystem::path executable_directory =
-        std::filesystem::path(executable_path).parent_path();
-    const std::filesystem::path project_directory =
+    const filesystem::path executable_directory =
+        filesystem::path(executable_path).parent_path();
+    const filesystem::path project_directory =
         executable_directory.parent_path().parent_path();
     const auto shader_path = executable_directory / L"Shader_Transparency.hlsl";
     m_output_directory = project_directory / L"reports" / L"local" / L"windowed";
 
-    m_context = std::make_unique<Engine::ApplicationContext>();
+    m_context = make_unique<Engine::ApplicationContext>();
     if (!m_context->initialize(m_window, window_width, window_height, shader_path, m_output_directory))
         return false;
     if (!m_context->scene_manager().register_scene(Engine::SceneType::Validation,
-        std::make_unique<ValidationScene>(), *m_context))
+        make_unique<ValidationScene>(), *m_context))
         return false;
     if (!m_context->scene_manager().register_scene(Engine::SceneType::EffectStress,
-        std::make_unique<EffectStressScene>(), *m_context))
+        make_unique<EffectStressScene>(), *m_context))
         return false;
     m_context->scene_manager().change_scene(Engine::SceneType::Validation);
     m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
         "ApplicationContext assembled Input, Camera, Scene, Benchmark, Renderer and Debug UI modules.");
     m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info,
         "Select Particle Stress and Forced sorting failure for the clearest comparison.");
-    m_previous_time = std::chrono::steady_clock::now();
+    m_previous_time = chrono::steady_clock::now();
     return true;
 }
 
@@ -104,8 +101,8 @@ int MainApp::run()
             continue;
         }
 
-        const auto now = std::chrono::steady_clock::now();
-        const float delta_time = std::chrono::duration<float>(now - m_previous_time).count();
+        const auto now = chrono::steady_clock::now();
+        const float delta_time = chrono::duration<float>(now - m_previous_time).count();
         m_previous_time = now;
         update(delta_time);
         render();
@@ -172,7 +169,7 @@ void MainApp::update(float delta_time)
         if (input.was_pressed('P'))
         {
             const auto& scene = m_context->scene_manager().active_scene();
-            std::wostringstream name;
+            wostringstream name;
             name << (m_context->scene_manager().active_scene_type() == Engine::SceneType::Validation
                 ? L"validation_" : L"stress_")
                  << scene.instance_count() << L"_capture.bmp";
@@ -216,22 +213,20 @@ void MainApp::render()
 
 void MainApp::adjust_instance_count(int direction)
 {
-    static constexpr std::array validation_counts{2u, 4u, 8u, 16u, 32u};
-    static constexpr std::array stress_counts{64u, 256u, 1024u, 4096u};
     auto& scene = m_context->scene_manager().active_scene();
     const auto choose = [&](const auto& counts)
     {
-        auto iterator = std::lower_bound(counts.begin(), counts.end(), scene.instance_count());
-        std::ptrdiff_t index = iterator == counts.end() ? counts.size() - 1 : iterator - counts.begin();
-        index = (std::max)(std::ptrdiff_t{0}, (std::min)(index + direction,
-            static_cast<std::ptrdiff_t>(counts.size() - 1)));
-        scene.set_instance_count(counts[static_cast<std::size_t>(index)]);
+        auto iterator = lower_bound(counts.begin(), counts.end(), scene.instance_count());
+        ptrdiff_t index = iterator == counts.end() ? counts.size() - 1 : iterator - counts.begin();
+        index = (max)(ptrdiff_t{0}, (min)(index + direction,
+            static_cast<ptrdiff_t>(counts.size() - 1)));
+        scene.set_instance_count(counts[static_cast<size_t>(index)]);
     };
     if (m_context->scene_manager().active_scene_type() == Engine::SceneType::Validation)
         choose(validation_counts);
     else
         choose(stress_counts);
-    std::ostringstream message;
+    ostringstream message;
     message << "Instance count changed by keyboard: " << scene.instance_count() << '.';
     m_context->debug_ui_manager().log(Engine::DebugLogLevel::Info, message.str());
 }

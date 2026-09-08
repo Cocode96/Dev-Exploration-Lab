@@ -15,10 +15,12 @@ class ApplicationContext;
 
 namespace Client
 {
+using namespace std;
+
 class MainApp final
 {
 public:
-    static std::unique_ptr<MainApp> create(HINSTANCE instance, int show_command);
+    static unique_ptr<MainApp> create(HINSTANCE instance, int show_command);
     ~MainApp();
 
     MainApp(const MainApp&) = delete;
@@ -37,9 +39,9 @@ private:
     static LRESULT CALLBACK window_proc(HWND window, UINT message, WPARAM w_param, LPARAM l_param);
 
     HWND m_window{};
-    std::unique_ptr<Engine::ApplicationContext> m_context;
+    unique_ptr<Engine::ApplicationContext> m_context;
     BenchmarkDebugPanel m_debug_panel;
-    std::filesystem::path m_output_directory;
-    std::chrono::steady_clock::time_point m_previous_time{};
+    filesystem::path m_output_directory;
+    chrono::steady_clock::time_point m_previous_time{};
 };
 }

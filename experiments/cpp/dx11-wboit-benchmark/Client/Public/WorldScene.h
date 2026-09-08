@@ -6,6 +6,8 @@
 
 namespace Client
 {
+using namespace std;
+
 class SkyBox;
 class Terrain;
 
@@ -19,10 +21,10 @@ public:
 
 protected:
     bool initialize_world();
-    virtual std::span<const Engine::EffectInstance> effect_instances() const = 0;
+    virtual span<const Engine::EffectInstance> effect_instances() const = 0;
 
 private:
-    std::unique_ptr<SkyBox> m_sky_box;
-    std::unique_ptr<Terrain> m_terrain;
+    unique_ptr<SkyBox> m_sky_box;
+    unique_ptr<Terrain> m_terrain;
 };
 }

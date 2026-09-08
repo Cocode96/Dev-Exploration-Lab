@@ -4,6 +4,8 @@
 
 namespace Engine
 {
+using namespace std;
+
 void InputManager::handle_message(HWND window, UINT message, WPARAM key, LPARAM data)
 {
     if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
@@ -41,14 +43,14 @@ void InputManager::handle_message(HWND window, UINT message, WPARAM key, LPARAM 
 
 bool InputManager::is_down(int virtual_key) const
 {
-    if (virtual_key < 0 || static_cast<std::size_t>(virtual_key) >= m_current.size())
+    if (virtual_key < 0 || static_cast<size_t>(virtual_key) >= m_current.size())
         return false;
     return m_current[virtual_key];
 }
 
 bool InputManager::was_pressed(int virtual_key) const
 {
-    if (virtual_key < 0 || static_cast<std::size_t>(virtual_key) >= m_current.size())
+    if (virtual_key < 0 || static_cast<size_t>(virtual_key) >= m_current.size())
         return false;
     return m_current[virtual_key] && !m_previous[virtual_key];
 }

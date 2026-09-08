@@ -1,10 +1,13 @@
 #include "BenchmarkDebugPanel.h"
+#include "Client_Constant.h"
+#include "Client_Function.h"
+#include "Engine_DebugUi_Constant.h"
 
 #include "ApplicationContext.h"
 #include "BenchmarkManager.h"
 #include "DebugUiManager.h"
 #include "EffectStressScene.h"
-#include "EngineTypes.h"
+#include "Engine_Struct.h"
 #include "Renderer.h"
 #include "SceneManager.h"
 
@@ -19,103 +22,13 @@
 #include <string>
 #include <string_view>
 
-namespace
-{
-constexpr char experiment_window_name[] = "Experiment Controls";
-constexpr char performance_window_name[] = "Live Performance";
-
-const char* ui_text(Engine::DebugUiLanguage language, const char* english, const char* korean)
-{
-    return language == Engine::DebugUiLanguage::Korean ? korean : english;
-}
-
-std::string to_utf8(std::wstring_view text)
-{
-    if (text.empty())
-        return {};
-    const int required_size = WideCharToMultiByte(CP_UTF8, 0, text.data(),
-        static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
-    if (required_size <= 0)
-        return {};
-    std::string output(static_cast<std::size_t>(required_size), '\0');
-    WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()),
-        output.data(), required_size, nullptr, nullptr);
-    return output;
-}
-
-void section_title(const char* title, const char* subtitle)
-{
-    ImGui::TextColored({0.95f, 0.97f, 0.99f, 1.0f}, "%s", title);
-    ImGui::SameLine();
-    ImGui::TextDisabled("%s", subtitle);
-    ImGui::Separator();
-}
-
-bool method_card(
-    const char* id,
-    const char* title,
-    const char* description,
-    bool selected,
-    const ImVec4& accent,
-    Engine::DebugUiLanguage language)
-{
-    ImGui::PushID(id);
-    ImGui::PushStyleColor(ImGuiCol_Button,
-        selected ? accent : ImVec4{0.14f, 0.20f, 0.26f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered,
-        selected ? accent : ImVec4{0.19f, 0.29f, 0.38f, 1.0f});
-    ImGui::PushStyleColor(ImGuiCol_Text,
-        selected ? ImVec4{0.04f, 0.06f, 0.08f, 1.0f} : ImVec4{0.92f, 0.94f, 0.96f, 1.0f});
-    const bool pressed = ImGui::Button(title, {ImGui::GetContentRegionAvail().x, 0.0f});
-    ImGui::PopStyleColor(3);
-    ImGui::TextDisabled("%s", selected
-        ? ui_text(language, "ACTIVE", "사용 중")
-        : ui_text(language, "CLICK TO SELECT", "클릭하여 선택"));
-    ImGui::SameLine();
-    ImGui::TextWrapped("%s", description);
-    ImGui::Spacing();
-    ImGui::PopID();
-    return pressed;
-}
-
-const char* method_name(Engine::TransparencyMode mode, Engine::DebugUiLanguage language)
-{
-    switch (mode)
-    {
-    case Engine::TransparencyMode::UnsortedAlpha:
-        return ui_text(language, "Unsorted Alpha", "미정렬 알파 블렌딩");
-    case Engine::TransparencyMode::ZSortedAlpha:
-        return ui_text(language, "CPU Z-Sorted Alpha", "CPU Z 정렬 알파 블렌딩");
-    case Engine::TransparencyMode::Wboit:
-        return ui_text(language, "Weighted Blended OIT", "가중 혼합 OIT");
-    }
-    return ui_text(language, "Unknown", "알 수 없음");
-}
-
-const char* scene_name(Engine::SceneType scene, Engine::DebugUiLanguage language)
-{
-    return scene == Engine::SceneType::Validation
-        ? ui_text(language, "Crossing Geometry Validation", "교차 지오메트리 검증")
-        : ui_text(language, "Particle Sorting Stress", "파티클 정렬 스트레스");
-}
-
-const wchar_t* method_file_name(Engine::TransparencyMode mode)
-{
-    switch (mode)
-    {
-    case Engine::TransparencyMode::UnsortedAlpha: return L"unsorted_alpha";
-    case Engine::TransparencyMode::ZSortedAlpha: return L"z_sorted_alpha";
-    case Engine::TransparencyMode::Wboit: return L"wboit";
-    }
-    return L"unknown";
-}
-}
-
 namespace Client
 {
+using namespace std;
+
 void BenchmarkDebugPanel::render(
     Engine::ApplicationContext& context,
-    const std::filesystem::path& output_directory)
+    const filesystem::path& output_directory)
 {
     const bool benchmark_running = context.benchmark_manager().is_running();
     if (benchmark_running && !m_previous_benchmark_running)
@@ -147,7 +60,7 @@ void BenchmarkDebugPanel::render(
 
 void BenchmarkDebugPanel::render_experiment_controls(
     Engine::ApplicationContext& context,
-    const std::filesystem::path& output_directory)
+    const filesystem::path& output_directory)
 {
     auto& scene_manager = context.scene_manager();
     auto& benchmark = context.benchmark_manager();
@@ -261,14 +174,12 @@ void BenchmarkDebugPanel::render_experiment_controls(
 
     section_title(ui_text(language, "3. Stress Controls", "3. 스트레스 설정"),
         ui_text(language, "make order errors visible", "정렬 오류를 눈에 띄게 만들기"));
-    constexpr std::array validation_counts{2u, 4u, 8u, 16u, 32u};
-    constexpr std::array stress_counts{64u, 256u, 1024u, 4096u};
-    const std::span<const std::uint32_t> counts =
+    const span<const uint32_t> counts =
         scene_manager.active_scene_type() == Engine::SceneType::Validation
-        ? std::span<const std::uint32_t>(validation_counts)
-        : std::span<const std::uint32_t>(stress_counts);
+        ? span<const uint32_t>(validation_counts)
+        : span<const uint32_t>(stress_counts);
     int selected_count = 0;
-    for (std::size_t index = 0; index < counts.size(); ++index)
+    for (size_t index = 0; index < counts.size(); ++index)
     {
         if (counts[index] == scene_manager.active_scene().instance_count())
             selected_count = static_cast<int>(index);
@@ -280,9 +191,9 @@ void BenchmarkDebugPanel::render_experiment_controls(
     if (ImGui::Combo(ui_text(language, "Instances", "인스턴스 수"), &selected_count, count_labels,
         static_cast<int>(counts.size())))
     {
-        scene_manager.active_scene().set_instance_count(counts[static_cast<std::size_t>(selected_count)]);
-        std::ostringstream message;
-        message << "Instance count changed: " << counts[static_cast<std::size_t>(selected_count)] << '.';
+        scene_manager.active_scene().set_instance_count(counts[static_cast<size_t>(selected_count)]);
+        ostringstream message;
+        message << "Instance count changed: " << counts[static_cast<size_t>(selected_count)] << '.';
         debug_ui.log(Engine::DebugLogLevel::Info, message.str());
     }
 
@@ -325,14 +236,14 @@ void BenchmarkDebugPanel::render_experiment_controls(
         "Capture Current Frame", "현재 프레임 캡처"), {-1.0f, 0.0f}))
     {
         const auto& active_scene = scene_manager.active_scene();
-        std::wostringstream file_name;
+        wostringstream file_name;
         file_name << (scene_manager.active_scene_type() == Engine::SceneType::Validation
             ? L"validation_" : L"stress_")
                   << active_scene.instance_count() << L'_'
                   << method_file_name(settings.transparency_mode)
                   << (settings.reverse_submission_order ? L"_reverse" : L"_forward")
                   << L"_scene.bmp";
-        std::wstring safe_name = file_name.str();
+        wstring safe_name = file_name.str();
         for (wchar_t& character : safe_name)
         {
             if (character == L' ')

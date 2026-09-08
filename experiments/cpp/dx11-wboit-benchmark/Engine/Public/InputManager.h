@@ -6,6 +6,8 @@
 
 namespace Engine
 {
+using namespace std;
+
 class InputManager final
 {
 public:
@@ -18,8 +20,8 @@ public:
     void end_frame();
 
 private:
-    std::array<bool, 256> m_current{};
-    std::array<bool, 256> m_previous{};
+    array<bool, 256> m_current{};
+    array<bool, 256> m_previous{};
     POINT m_last_mouse_position{};
     POINT m_mouse_delta{};
     bool m_has_mouse_position{};
