@@ -27,6 +27,10 @@
     <PostBuildEvent><Command>copy /Y "$(ProjectDir)Shader\Transparency.hlsl" "$(OutDir)Shader_Transparency.hlsl"</Command></PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Client\Public\Client_Function.h" />
+    <ClInclude Include="Client\Public\Client_Enum.h" />
+    <ClInclude Include="Client\Public\Client_Constant.h" />
+    <ClInclude Include="Client\Public\Client_Effect_Constant.h" />
     <ClInclude Include="Client\Public\BenchmarkDebugPanel.h" />
     <ClInclude Include="Client\Public\EffectStressScene.h" />
     <ClInclude Include="Client\Public\MainApp.h" />

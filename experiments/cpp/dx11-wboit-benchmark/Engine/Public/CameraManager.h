@@ -4,6 +4,8 @@
 
 namespace Engine
 {
+using namespace std;
+
 class FreeCamera;
 class InputManager;
 
@@ -19,6 +21,6 @@ public:
     const FreeCamera& active_camera() const;
 
 private:
-    std::unique_ptr<FreeCamera> m_active_camera;
+    unique_ptr<FreeCamera> m_active_camera;
 };
 }

@@ -1,4 +1,6 @@
 #include "BenchmarkManager.h"
+#include "Engine_Benchmark_Constant.h"
+#include "Engine_Benchmark_Function.h"
 
 #include "ApplicationContext.h"
 #include "SceneManager.h"
@@ -10,59 +12,13 @@
 #include <numeric>
 #include <sstream>
 
-namespace
-{
-struct Statistics
-{
-    double mean{};
-    double median{};
-    double p95{};
-    double standard_deviation{};
-};
-
-Statistics summarize(std::vector<double> values)
-{
-    Statistics output{};
-    if (values.empty())
-        return output;
-    output.mean = std::accumulate(values.begin(), values.end(), 0.0) / values.size();
-    double variance{};
-    for (double value : values)
-    {
-        const double delta = value - output.mean;
-        variance += delta * delta;
-    }
-    output.standard_deviation = std::sqrt(variance / values.size());
-    std::sort(values.begin(), values.end());
-    output.median = values[values.size() / 2];
-    const std::size_t p95_index = static_cast<std::size_t>(
-        std::ceil(static_cast<double>(values.size()) * 0.95) - 1.0);
-    output.p95 = values[(std::min)(p95_index, values.size() - 1)];
-    return output;
-}
-
-const char* scene_name(Engine::SceneType type)
-{
-    return type == Engine::SceneType::Validation ? "validation" : "effect-stress";
-}
-
-const char* mode_name(Engine::TransparencyMode mode)
-{
-    switch (mode)
-    {
-    case Engine::TransparencyMode::UnsortedAlpha: return "unsorted-alpha";
-    case Engine::TransparencyMode::ZSortedAlpha: return "z-sorted-alpha";
-    case Engine::TransparencyMode::Wboit: return "wboit";
-    }
-    return "unknown";
-}
-}
-
 namespace Engine
 {
-void BenchmarkManager::initialize(std::filesystem::path output_directory)
+using namespace std;
+
+void BenchmarkManager::initialize(filesystem::path output_directory)
 {
-    m_output_directory = std::move(output_directory);
+    m_output_directory = move(output_directory);
 }
 
 void BenchmarkManager::start(ApplicationContext& context)
@@ -77,9 +33,9 @@ void BenchmarkManager::start(ApplicationContext& context)
     for (TransparencyMode mode : {TransparencyMode::UnsortedAlpha,
         TransparencyMode::ZSortedAlpha, TransparencyMode::Wboit})
     {
-        for (std::uint32_t count : {2u, 4u, 8u, 16u, 32u})
+        for (uint32_t count : {2u, 4u, 8u, 16u, 32u})
             m_phases.push_back({SceneType::Validation, mode, count});
-        for (std::uint32_t count : {64u, 256u, 1024u})
+        for (uint32_t count : {64u, 256u, 1024u})
             m_phases.push_back({SceneType::EffectStress, mode, count});
     }
     m_phase_index = 0;
@@ -132,11 +88,11 @@ void BenchmarkManager::complete_current_phase(ApplicationContext& context)
     context.render_settings() = m_previous_settings;
 }
 
-std::wstring BenchmarkManager::status_text() const
+wstring BenchmarkManager::status_text() const
 {
     if (!m_running)
         return L"B: run full benchmark";
-    std::wostringstream text;
+    wostringstream text;
     text << L"Benchmark " << (m_phase_index + 1) << L'/' << m_phases.size();
     if (m_warmup_remaining > 0)
         text << L" warmup " << m_warmup_remaining;
@@ -145,14 +101,14 @@ std::wstring BenchmarkManager::status_text() const
     return text.str();
 }
 
-std::vector<BenchmarkManager::ResultSummary> BenchmarkManager::result_summaries() const
+vector<BenchmarkManager::ResultSummary> BenchmarkManager::result_summaries() const
 {
-    std::vector<ResultSummary> summaries;
+    vector<ResultSummary> summaries;
     summaries.reserve(m_results.size());
     for (const auto& result : m_results)
     {
-        std::vector<double> total;
-        std::vector<double> sort;
+        vector<double> total;
+        vector<double> sort;
         total.reserve(result.samples.size());
         sort.reserve(result.samples.size());
         for (const auto& sample : result.samples)
@@ -171,19 +127,19 @@ std::vector<BenchmarkManager::ResultSummary> BenchmarkManager::result_summaries(
 
 void BenchmarkManager::write_results() const
 {
-    std::filesystem::create_directories(m_output_directory);
-    std::ofstream output(m_output_directory / "windowed_benchmark.csv");
+    filesystem::create_directories(m_output_directory);
+    ofstream output(m_output_directory / "windowed_benchmark.csv");
     output << "scene,mode,instances,gpu_total_mean_ms,gpu_total_median_ms,gpu_total_p95_ms,"
               "gpu_total_stddev_ms,gpu_transparency_mean_ms,gpu_resolve_mean_ms,"
               "cpu_submit_mean_ms,cpu_sort_mean_ms,total_draw_calls,transparency_draw_calls\n";
-    output << std::fixed << std::setprecision(6);
+    output << fixed << setprecision(6);
     for (const auto& result : m_results)
     {
-        std::vector<double> total;
-        std::vector<double> transparency;
-        std::vector<double> resolve;
-        std::vector<double> submit;
-        std::vector<double> sort;
+        vector<double> total;
+        vector<double> transparency;
+        vector<double> resolve;
+        vector<double> submit;
+        vector<double> sort;
         for (const auto& sample : result.samples)
         {
             total.push_back(sample.gpu_total_ms);

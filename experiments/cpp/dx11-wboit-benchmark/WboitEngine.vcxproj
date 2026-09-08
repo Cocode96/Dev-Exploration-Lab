@@ -36,12 +36,25 @@
     <Lib><LinkTimeCodeGeneration>true</LinkTimeCodeGeneration></Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Engine\Public\Engine_Benchmark_Constant.h" />
+    <ClInclude Include="Engine\Public\Engine_Enum.h" />
+    <ClInclude Include="Engine\Public\Engine_Struct.h" />
+    <ClInclude Include="Engine\Public\Engine_Function.h" />
+    <ClInclude Include="Engine\Public\Engine_DebugUi_Enum.h" />
+    <ClInclude Include="Engine\Public\Engine_DebugUi_Struct.h" />
+    <ClInclude Include="Engine\Public\Engine_Render_Struct.h" />
+    <ClInclude Include="Engine\Public\Engine_DebugUi_Constant.h" />
+    <ClInclude Include="Engine\Public\Engine_Benchmark_Struct.h" />
+    <ClInclude Include="Engine\Public\Engine_Render_Function.h" />
+    <ClInclude Include="Engine\Public\Engine_Benchmark_Function.h" />
+    <ClInclude Include="Engine\Public\Engine_Mesh_Function.h" />
+    <ClInclude Include="Engine\Public\Engine_DebugUi_Function.h" />
+    <ClInclude Include="Engine\Public\Engine_Render_Constant.h" />
     <ClInclude Include="Engine\Public\ApplicationContext.h" />
     <ClInclude Include="Engine\Public\BenchmarkManager.h" />
     <ClInclude Include="Engine\Public\CameraComponent.h" />
     <ClInclude Include="Engine\Public\CameraManager.h" />
     <ClInclude Include="Engine\Public\DebugUiManager.h" />
-    <ClInclude Include="Engine\Public\EngineTypes.h" />
     <ClInclude Include="Engine\Public\FreeCamera.h" />
     <ClInclude Include="Engine\Public\FreeCameraControllerComponent.h" />
     <ClInclude Include="Engine\Public\GameObject.h" />

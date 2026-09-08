@@ -1,4 +1,7 @@
 #include "Renderer.h"
+#include "Engine_Render_Constant.h"
+#include "Engine_Render_Struct.h"
+#include "Engine_Render_Function.h"
 
 #include "ApplicationContext.h"
 #include "CameraManager.h"
@@ -15,95 +18,14 @@
 #include <fstream>
 #include <thread>
 
-using Microsoft::WRL::ComPtr;
-
-namespace
-{
-struct EffectVertex
-{
-    DirectX::XMFLOAT2 position;
-    DirectX::XMFLOAT2 uv;
-};
-
-struct alignas(16) FrameConstants
-{
-    DirectX::XMFLOAT4X4 world;
-    DirectX::XMFLOAT4X4 view_projection;
-    DirectX::XMFLOAT4 camera_position;
-    DirectX::XMFLOAT4 camera_right;
-    DirectX::XMFLOAT4 camera_up;
-    DirectX::XMFLOAT4 camera_forward;
-    DirectX::XMFLOAT4 sky_zenith;
-    DirectX::XMFLOAT4 sky_horizon;
-    DirectX::XMFLOAT2 resolution;
-    int alpha_mode;
-    int depth_mode;
-    float p_alpha;
-    float k_alpha;
-    float k_depth;
-    float padding;
-};
-
-static_assert(sizeof(FrameConstants) % 16 == 0);
-
-bool succeeded(HRESULT result)
-{
-    return SUCCEEDED(result);
-}
-
-ComPtr<ID3DBlob> compile_shader(const std::filesystem::path& path, const char* entry_point,
-    const char* target)
-{
-    ComPtr<ID3DBlob> bytecode;
-    ComPtr<ID3DBlob> errors;
-    const UINT flags = D3DCOMPILE_ENABLE_STRICTNESS | D3DCOMPILE_WARNINGS_ARE_ERRORS;
-    if (FAILED(D3DCompileFromFile(path.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
-        entry_point, target, flags, 0, &bytecode, &errors)))
-    {
-        if (errors)
-            OutputDebugStringA(static_cast<const char*>(errors->GetBufferPointer()));
-        return nullptr;
-    }
-    return bytecode;
-}
-
-void write_bmp(const std::filesystem::path& path, std::uint32_t width, std::uint32_t height,
-    const std::vector<std::uint8_t>& rgba)
-{
-    std::filesystem::create_directories(path.parent_path());
-    BITMAPFILEHEADER file_header{};
-    BITMAPINFOHEADER info_header{};
-    file_header.bfType = 0x4D42;
-    file_header.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-    file_header.bfSize = file_header.bfOffBits + width * height * 4;
-    info_header.biSize = sizeof(BITMAPINFOHEADER);
-    info_header.biWidth = static_cast<LONG>(width);
-    info_header.biHeight = -static_cast<LONG>(height);
-    info_header.biPlanes = 1;
-    info_header.biBitCount = 32;
-    info_header.biCompression = BI_RGB;
-    info_header.biSizeImage = width * height * 4;
-
-    std::vector<std::uint8_t> bgra(rgba.size());
-    for (std::size_t index = 0; index < rgba.size(); index += 4)
-    {
-        bgra[index] = rgba[index + 2];
-        bgra[index + 1] = rgba[index + 1];
-        bgra[index + 2] = rgba[index];
-        bgra[index + 3] = rgba[index + 3];
-    }
-
-    std::ofstream stream(path, std::ios::binary);
-    stream.write(reinterpret_cast<const char*>(&file_header), sizeof(file_header));
-    stream.write(reinterpret_cast<const char*>(&info_header), sizeof(info_header));
-    stream.write(reinterpret_cast<const char*>(bgra.data()), static_cast<std::streamsize>(bgra.size()));
-}
-}
-
 namespace Engine
 {
-bool Renderer::initialize(ApplicationContext& context, HWND window, std::uint32_t width,
-    std::uint32_t height, const std::filesystem::path& shader_path)
+using namespace std;
+using namespace DirectX;
+using Microsoft::WRL::ComPtr;
+
+bool Renderer::initialize(ApplicationContext& context, HWND window, uint32_t width,
+    uint32_t height, const filesystem::path& shader_path)
 {
     m_context = &context;
     m_width = width;
@@ -140,10 +62,9 @@ bool Renderer::create_device_and_swap_chain(HWND window)
     if (!adapter)
         return false;
 
-    constexpr std::array levels{D3D_FEATURE_LEVEL_11_1, D3D_FEATURE_LEVEL_11_0};
     D3D_FEATURE_LEVEL selected{};
     if (!succeeded(D3D11CreateDevice(adapter.Get(), D3D_DRIVER_TYPE_UNKNOWN, nullptr,
-        D3D11_CREATE_DEVICE_BGRA_SUPPORT, levels.data(), static_cast<UINT>(levels.size()),
+        D3D11_CREATE_DEVICE_BGRA_SUPPORT, device_feature_levels.data(), static_cast<UINT>(device_feature_levels.size()),
         D3D11_SDK_VERSION, &m_device, &selected, &m_device_context)))
         return false;
 
@@ -173,7 +94,7 @@ bool Renderer::create_render_targets()
     return create_scene_render_targets(m_requested_scene_width, m_requested_scene_height);
 }
 
-bool Renderer::create_scene_render_targets(std::uint32_t width, std::uint32_t height)
+bool Renderer::create_scene_render_targets(uint32_t width, uint32_t height)
 {
     D3D11_TEXTURE2D_DESC scene_desc{};
     scene_desc.Width = width;
@@ -248,18 +169,18 @@ bool Renderer::create_scene_render_targets(std::uint32_t width, std::uint32_t he
             accum_weight_texture.Get(), nullptr, &accum_weight_srv)))
         return false;
 
-    m_scene_color_texture = std::move(scene_color_texture);
-    m_scene_color_rtv = std::move(scene_color_rtv);
-    m_scene_color_srv = std::move(scene_color_srv);
-    m_capture_staging = std::move(capture_staging);
-    m_depth_texture = std::move(depth_texture);
-    m_depth_dsv = std::move(depth_dsv);
-    m_accum_color_texture = std::move(accum_color_texture);
-    m_accum_color_rtv = std::move(accum_color_rtv);
-    m_accum_color_srv = std::move(accum_color_srv);
-    m_accum_weight_texture = std::move(accum_weight_texture);
-    m_accum_weight_rtv = std::move(accum_weight_rtv);
-    m_accum_weight_srv = std::move(accum_weight_srv);
+    m_scene_color_texture = move(scene_color_texture);
+    m_scene_color_rtv = move(scene_color_rtv);
+    m_scene_color_srv = move(scene_color_srv);
+    m_capture_staging = move(capture_staging);
+    m_depth_texture = move(depth_texture);
+    m_depth_dsv = move(depth_dsv);
+    m_accum_color_texture = move(accum_color_texture);
+    m_accum_color_rtv = move(accum_color_rtv);
+    m_accum_color_srv = move(accum_color_srv);
+    m_accum_weight_texture = move(accum_weight_texture);
+    m_accum_weight_rtv = move(accum_weight_rtv);
+    m_accum_weight_srv = move(accum_weight_srv);
     m_scene_width = width;
     m_scene_height = height;
     m_viewport = {0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f};
@@ -274,13 +195,13 @@ bool Renderer::prepare_scene_view()
     return create_scene_render_targets(m_requested_scene_width, m_requested_scene_height);
 }
 
-void Renderer::request_scene_view_size(std::uint32_t width, std::uint32_t height) noexcept
+void Renderer::request_scene_view_size(uint32_t width, uint32_t height) noexcept
 {
-    m_requested_scene_width = (std::clamp)(width, 64u, 4096u);
-    m_requested_scene_height = (std::clamp)(height, 64u, 4096u);
+    m_requested_scene_width = (clamp)(width, 64u, 4096u);
+    m_requested_scene_height = (clamp)(height, 64u, 4096u);
 }
 
-bool Renderer::create_pipeline(const std::filesystem::path& shader_path)
+bool Renderer::create_pipeline(const filesystem::path& shader_path)
 {
     const auto effect_vs = compile_shader(shader_path, "VSEffect", "vs_5_0");
     const auto world_vs = compile_shader(shader_path, "VSWorld", "vs_5_0");
@@ -304,7 +225,7 @@ bool Renderer::create_pipeline(const std::filesystem::path& shader_path)
         || !succeeded(m_device->CreatePixelShader(resolve_ps->GetBufferPointer(), resolve_ps->GetBufferSize(), nullptr, &m_resolve_ps)))
         return false;
 
-    const std::array<D3D11_INPUT_ELEMENT_DESC, 6> effect_elements{
+    const array<D3D11_INPUT_ELEMENT_DESC, 6> effect_elements{
         D3D11_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         D3D11_INPUT_ELEMENT_DESC{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 8, D3D11_INPUT_PER_VERTEX_DATA, 0},
         D3D11_INPUT_ELEMENT_DESC{"INSTANCE_POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 1, 0, D3D11_INPUT_PER_INSTANCE_DATA, 1},
@@ -316,7 +237,7 @@ bool Renderer::create_pipeline(const std::filesystem::path& shader_path)
         effect_vs->GetBufferPointer(), effect_vs->GetBufferSize(), &m_effect_input_layout)))
         return false;
 
-    const std::array<D3D11_INPUT_ELEMENT_DESC, 3> world_elements{
+    const array<D3D11_INPUT_ELEMENT_DESC, 3> world_elements{
         D3D11_INPUT_ELEMENT_DESC{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
         D3D11_INPUT_ELEMENT_DESC{"NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0},
         D3D11_INPUT_ELEMENT_DESC{"COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 24, D3D11_INPUT_PER_VERTEX_DATA, 0}
@@ -383,16 +304,11 @@ bool Renderer::create_pipeline(const std::filesystem::path& shader_path)
 
 bool Renderer::create_geometry()
 {
-    constexpr std::array<EffectVertex, 6> vertices{
-        EffectVertex{{-1.0f, -1.0f}, {0.0f, 1.0f}}, EffectVertex{{-1.0f, 1.0f}, {0.0f, 0.0f}},
-        EffectVertex{{1.0f, 1.0f}, {1.0f, 0.0f}}, EffectVertex{{-1.0f, -1.0f}, {0.0f, 1.0f}},
-        EffectVertex{{1.0f, 1.0f}, {1.0f, 0.0f}}, EffectVertex{{1.0f, -1.0f}, {1.0f, 1.0f}}
-    };
     D3D11_BUFFER_DESC vertex_desc{};
-    vertex_desc.ByteWidth = sizeof(vertices);
+    vertex_desc.ByteWidth = sizeof(effect_quad_vertices);
     vertex_desc.Usage = D3D11_USAGE_IMMUTABLE;
     vertex_desc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-    D3D11_SUBRESOURCE_DATA vertex_data{vertices.data()};
+    D3D11_SUBRESOURCE_DATA vertex_data{effect_quad_vertices.data()};
     if (!succeeded(m_device->CreateBuffer(&vertex_desc, &vertex_data, &m_quad_vertex_buffer)))
         return false;
 
@@ -439,49 +355,49 @@ bool Renderer::upload_terrain(const MeshRenderView& terrain)
     if (!succeeded(m_device->CreateBuffer(&vertex_desc, &vertex_data, &vertex_buffer))
         || !succeeded(m_device->CreateBuffer(&index_desc, &index_data, &index_buffer)))
         return false;
-    m_terrain_vertex_buffer = std::move(vertex_buffer);
-    m_terrain_index_buffer = std::move(index_buffer);
-    m_terrain_index_count = static_cast<std::uint32_t>(terrain.indices.size());
+    m_terrain_vertex_buffer = move(vertex_buffer);
+    m_terrain_index_buffer = move(index_buffer);
+    m_terrain_index_count = static_cast<uint32_t>(terrain.indices.size());
     m_terrain_source = terrain.vertices.data();
     return true;
 }
 
-bool Renderer::upload_instances(std::span<const EffectInstance> instances,
+bool Renderer::upload_instances(span<const EffectInstance> instances,
     const RenderSettings& settings, double& sort_milliseconds)
 {
     if (instances.empty() || instances.size() > 16384)
         return false;
     m_submission_instances.assign(instances.begin(), instances.end());
     if (settings.reverse_submission_order)
-        std::reverse(m_submission_instances.begin(), m_submission_instances.end());
+        reverse(m_submission_instances.begin(), m_submission_instances.end());
     if (settings.transparency_mode == TransparencyMode::ZSortedAlpha)
     {
-        const auto start = std::chrono::steady_clock::now();
+        const auto start = chrono::steady_clock::now();
         const auto& active_camera = m_context->camera_manager().active_camera();
-        const auto camera_position = DirectX::XMLoadFloat3(&active_camera.transform().position());
+        const auto camera_position = XMLoadFloat3(&active_camera.transform().position());
         const auto camera_forward = active_camera.camera().forward(active_camera.transform());
-        std::stable_sort(m_submission_instances.begin(), m_submission_instances.end(),
+        stable_sort(m_submission_instances.begin(), m_submission_instances.end(),
             [camera_position, camera_forward](const EffectInstance& left, const EffectInstance& right)
             {
                 const auto depth = [camera_position, camera_forward](const EffectInstance& instance)
                 {
-                    const auto position = DirectX::XMLoadFloat4(&instance.position_and_billboard);
-                    return DirectX::XMVectorGetX(DirectX::XMVector3Dot(
-                        DirectX::XMVectorSubtract(position, camera_position), camera_forward));
+                    const auto position = XMLoadFloat4(&instance.position_and_billboard);
+                    return XMVectorGetX(XMVector3Dot(
+                        XMVectorSubtract(position, camera_position), camera_forward));
                 };
                 return depth(left) > depth(right);
             });
-        sort_milliseconds = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - start).count();
+        sort_milliseconds = chrono::duration<double, milli>(
+            chrono::steady_clock::now() - start).count();
     }
 
     D3D11_MAPPED_SUBRESOURCE mapped{};
     if (!succeeded(m_device_context->Map(m_instance_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
         return false;
-    std::memcpy(mapped.pData, m_submission_instances.data(),
+    memcpy(mapped.pData, m_submission_instances.data(),
         m_submission_instances.size() * sizeof(EffectInstance));
     m_device_context->Unmap(m_instance_buffer.Get(), 0);
-    m_active_instance_count = static_cast<std::uint32_t>(m_submission_instances.size());
+    m_active_instance_count = static_cast<uint32_t>(m_submission_instances.size());
     return true;
 }
 
@@ -492,13 +408,13 @@ void Renderer::update_frame_constants(const SceneRenderView& scene)
     const auto& camera = active_camera.camera();
     FrameConstants constants{};
     constants.world = scene.terrain.world;
-    DirectX::XMStoreFloat4x4(&constants.view_projection, DirectX::XMMatrixTranspose(
+    XMStoreFloat4x4(&constants.view_projection, XMMatrixTranspose(
         camera.view_matrix(transform) * camera.projection_matrix()));
-    DirectX::XMStoreFloat4(&constants.camera_position,
-        DirectX::XMVectorSet(transform.position().x, transform.position().y, transform.position().z, 1.0f));
-    DirectX::XMStoreFloat4(&constants.camera_right, camera.right(transform));
-    DirectX::XMStoreFloat4(&constants.camera_up, camera.up(transform));
-    DirectX::XMStoreFloat4(&constants.camera_forward, camera.forward(transform));
+    XMStoreFloat4(&constants.camera_position,
+        XMVectorSet(transform.position().x, transform.position().y, transform.position().z, 1.0f));
+    XMStoreFloat4(&constants.camera_right, camera.right(transform));
+    XMStoreFloat4(&constants.camera_up, camera.up(transform));
+    XMStoreFloat4(&constants.camera_forward, camera.forward(transform));
     constants.sky_zenith = scene.sky.zenith_color;
     constants.sky_horizon = scene.sky.horizon_color;
     constants.resolution = {
@@ -550,11 +466,10 @@ void Renderer::draw_terrain()
 
 void Renderer::bind_effect_pipeline(ID3D11PixelShader* pixel_shader, ID3D11BlendState* blend_state)
 {
-    const std::array<ID3D11Buffer*, 2> buffers{m_quad_vertex_buffer.Get(), m_instance_buffer.Get()};
-    const std::array<UINT, 2> strides{sizeof(EffectVertex), sizeof(EffectInstance)};
-    constexpr std::array<UINT, 2> offsets{0, 0};
+    const array<ID3D11Buffer*, 2> buffers{m_quad_vertex_buffer.Get(), m_instance_buffer.Get()};
+    const array<UINT, 2> strides{sizeof(EffectVertex), sizeof(EffectInstance)};
     m_device_context->IASetInputLayout(m_effect_input_layout.Get());
-    m_device_context->IASetVertexBuffers(0, 2, buffers.data(), strides.data(), offsets.data());
+    m_device_context->IASetVertexBuffers(0, 2, buffers.data(), strides.data(), effect_buffer_offsets.data());
     m_device_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     m_device_context->VSSetShader(m_effect_vs.Get(), nullptr, 0);
     m_device_context->PSSetShader(pixel_shader, nullptr, 0);
@@ -576,10 +491,9 @@ void Renderer::draw_alpha()
 
 void Renderer::draw_wboit_accumulation()
 {
-    constexpr float zero[4]{};
-    m_device_context->ClearRenderTargetView(m_accum_color_rtv.Get(), zero);
-    m_device_context->ClearRenderTargetView(m_accum_weight_rtv.Get(), zero);
-    const std::array<ID3D11RenderTargetView*, 2> targets{m_accum_color_rtv.Get(), m_accum_weight_rtv.Get()};
+    m_device_context->ClearRenderTargetView(m_accum_color_rtv.Get(), oit_clear_color);
+    m_device_context->ClearRenderTargetView(m_accum_weight_rtv.Get(), oit_clear_color);
+    const array<ID3D11RenderTargetView*, 2> targets{m_accum_color_rtv.Get(), m_accum_weight_rtv.Get()};
     m_device_context->OMSetRenderTargets(2, targets.data(), m_depth_dsv.Get());
     bind_effect_pipeline(m_wboit_ps.Get(), m_additive_blend.Get());
     m_device_context->DrawInstanced(6, m_active_instance_count, 0, 0);
@@ -589,7 +503,7 @@ void Renderer::draw_wboit_resolve()
 {
     ID3D11RenderTargetView* null_targets[2]{};
     m_device_context->OMSetRenderTargets(2, null_targets, nullptr);
-    const std::array<ID3D11ShaderResourceView*, 2> resources{m_accum_color_srv.Get(), m_accum_weight_srv.Get()};
+    const array<ID3D11ShaderResourceView*, 2> resources{m_accum_color_srv.Get(), m_accum_weight_srv.Get()};
     m_device_context->PSSetShaderResources(0, 2, resources.data());
     ID3D11RenderTargetView* target = m_scene_color_rtv.Get();
     m_device_context->OMSetRenderTargets(1, &target, nullptr);
@@ -600,7 +514,7 @@ void Renderer::draw_wboit_resolve()
     m_device_context->VSSetShader(m_fullscreen_vs.Get(), nullptr, 0);
     m_device_context->PSSetShader(m_resolve_ps.Get(), nullptr, 0);
     m_device_context->Draw(3, 0);
-    const std::array<ID3D11ShaderResourceView*, 2> null_resources{};
+    const array<ID3D11ShaderResourceView*, 2> null_resources{};
     m_device_context->PSSetShaderResources(0, 2, null_resources.data());
 }
 
@@ -615,11 +529,10 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
     m_device_context->Begin(m_disjoint_query.Get());
     m_device_context->End(m_frame_start_query.Get());
     m_device_context->RSSetViewports(1, &m_viewport);
-    constexpr float clear_color[]{0.02f, 0.05f, 0.12f, 1.0f};
-    m_device_context->ClearRenderTargetView(m_scene_color_rtv.Get(), clear_color);
+    m_device_context->ClearRenderTargetView(m_scene_color_rtv.Get(), scene_clear_color);
     m_device_context->ClearDepthStencilView(m_depth_dsv.Get(), D3D11_CLEAR_DEPTH, 1.0f, 0);
 
-    const auto cpu_start = std::chrono::steady_clock::now();
+    const auto cpu_start = chrono::steady_clock::now();
     draw_sky();
     draw_terrain();
     m_device_context->End(m_transparency_start_query.Get());
@@ -638,8 +551,8 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
         metrics.transparency_draw_calls = 1;
         metrics.total_draw_calls = 3;
     }
-    metrics.cpu_submit_ms = std::chrono::duration<double, std::milli>(
-        std::chrono::steady_clock::now() - cpu_start).count();
+    metrics.cpu_submit_ms = chrono::duration<double, milli>(
+        chrono::steady_clock::now() - cpu_start).count();
     m_device_context->End(m_frame_end_query.Get());
     m_device_context->End(m_disjoint_query.Get());
 
@@ -652,7 +565,6 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
     ID3D11RenderTargetView* back_buffer_target = m_back_buffer_rtv.Get();
     m_device_context->OMSetRenderTargets(1, &back_buffer_target, nullptr);
     m_device_context->RSSetViewports(1, &m_viewport);
-    constexpr float ui_clear_color[]{0.035f, 0.045f, 0.06f, 1.0f};
     m_device_context->ClearRenderTargetView(m_back_buffer_rtv.Get(), ui_clear_color);
     m_context->debug_ui_manager().render_draw_data();
     m_swap_chain->Present(0, 0);
@@ -660,14 +572,14 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
 
     D3D11_QUERY_DATA_TIMESTAMP_DISJOINT disjoint{};
     while (m_device_context->GetData(m_disjoint_query.Get(), &disjoint, sizeof(disjoint), 0) == S_FALSE)
-        std::this_thread::yield();
+        this_thread::yield();
     if (!disjoint.Disjoint && disjoint.Frequency > 0)
     {
         UINT64 frame_start{}, transparency_start{}, transparency_end{}, frame_end{};
         const auto wait = [this](ID3D11Query* query, UINT64& timestamp)
         {
             while (m_device_context->GetData(query, &timestamp, sizeof(timestamp), 0) == S_FALSE)
-                std::this_thread::yield();
+                this_thread::yield();
         };
         wait(m_frame_start_query.Get(), frame_start);
         wait(m_transparency_start_query.Get(), transparency_start);
@@ -683,26 +595,26 @@ FrameMetrics Renderer::render_frame(const SceneRenderView& scene, const RenderSe
     return metrics;
 }
 
-void Renderer::request_capture(std::filesystem::path output_path)
+void Renderer::request_capture(filesystem::path output_path)
 {
-    m_pending_capture_path = std::move(output_path);
+    m_pending_capture_path = move(output_path);
 }
 
-void Renderer::save_scene_view_bmp(const std::filesystem::path& path)
+void Renderer::save_scene_view_bmp(const filesystem::path& path)
 {
     m_device_context->CopyResource(m_capture_staging.Get(), m_scene_color_texture.Get());
     D3D11_MAPPED_SUBRESOURCE mapped{};
     if (FAILED(m_device_context->Map(m_capture_staging.Get(), 0, D3D11_MAP_READ, 0, &mapped)))
         return;
-    std::vector<std::uint8_t> pixels(
-        static_cast<std::size_t>(m_scene_width) * m_scene_height * 4);
-    for (std::uint32_t row = 0; row < m_scene_height; ++row)
+    vector<uint8_t> pixels(
+        static_cast<size_t>(m_scene_width) * m_scene_height * 4);
+    for (uint32_t row = 0; row < m_scene_height; ++row)
     {
-        const auto* source = static_cast<const std::uint8_t*>(mapped.pData)
-            + static_cast<std::size_t>(row) * mapped.RowPitch;
+        const auto* source = static_cast<const uint8_t*>(mapped.pData)
+            + static_cast<size_t>(row) * mapped.RowPitch;
         auto* destination = pixels.data()
-            + static_cast<std::size_t>(row) * m_scene_width * 4;
-        std::memcpy(destination, source, static_cast<std::size_t>(m_scene_width) * 4);
+            + static_cast<size_t>(row) * m_scene_width * 4;
+        memcpy(destination, source, static_cast<size_t>(m_scene_width) * 4);
     }
     m_device_context->Unmap(m_capture_staging.Get(), 0);
     write_bmp(path, m_scene_width, m_scene_height, pixels);
