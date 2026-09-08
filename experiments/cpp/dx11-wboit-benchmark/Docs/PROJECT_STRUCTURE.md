@@ -159,3 +159,20 @@ dx11-wboit-benchmark/
 - 강제 정렬 실패 장면은 알고리즘 차이를 드러내기 위한 합성 최악 조건이다.
 - 현재 수치는 독립 실험 결과이며 실제 게임 파이프라인의 성능을 대신하지 않는다.
 - 실제 게임 주장으로 확장하려면 PIX 또는 RenderDoc 캡처와 실제 이펙트 데이터가 추가로 필요하다.
+
+## 2026-09-08: 역할별 정의와 보조 함수 분리
+
+- `Engine_Enum.h`, `Engine_Struct.h`: 공용 장면 enum과 렌더링 데이터.
+- `Engine_Render_Struct.h`, `Engine_Render_Constant.h`, `Engine_Render_Function.h`: GPU 데이터 배치, 파이프라인 고정값, 셰이더 컴파일과 BMP 저장 함수.
+- `Engine_Benchmark_Struct.h`, `Engine_Benchmark_Constant.h`, `Engine_Benchmark_Function.h`: 통계 데이터, 측정 프레임 수와 보고서 보조 함수.
+- `Engine_DebugUi_Enum.h`, `Engine_DebugUi_Struct.h`, `Engine_DebugUi_Constant.h`, `Engine_DebugUi_Function.h`: 디버그 UI 정의와 보조 함수.
+- `Engine_Function.h`, `Engine_Mesh_Function.h`: 투명도 모드 이름과 절차 생성 지형 보조 함수.
+- `Client_Enum.h`, `Client_Constant.h`, `Client_Effect_Constant.h`, `Client_Function.h`: 스트레스 모드, 앱 설정, 공유 색상 팔레트와 패널 보조 함수.
+
+헤더는 필요한 의존성을 직접 포함한다. 모든 정의를 한꺼번에 포함하는 통합 헤더와 PCH는 도입하지 않았다. 표준 라이브러리와 DirectX의 using 선언은 Engine 또는 Client 네임스페이스 안에 둔다. 클래스 전용 타입과 객체 소유권은 유지하고, 실행 중 계산되는 const 지역 변수는 사용 지점에 남긴다. 클래스 인덱스 변환용 constexpr 함수도 해당 클래스에 유지한다.
+
+검증: Release x64 솔루션 빌드 통과. Engine/Client 공개 헤더 40개를 각각 단독 번역 단위로 MSVC C++20, /W4, /WX, /Zs로 검사해 모두 통과했다. git diff --check 통과. 실행 화면과 성능 수치는 이번에 재측정하지 않았다. 기존 README와 reference SUMMARY 3개의 미커밋 변경은 이번 수정에 포함하지 않았다.
+
+## Visual Studio 필터 구성
+
+Engine과 Client 모두 역할 아래 클래스별 하위 필터를 사용하며 같은 클래스의 .h와 .cpp를 함께 배치한다. 물리적인 Public/Private 디렉터리는 필터 분류에 사용하지 않는다. 공용 정의는 Enum, Struct, Constant, Function 역할별 하위 필터로 분류한다. Client 진입점은 EntryPoint, 셰이더와 문서는 기존 전용 필터에 둔다. 두 프로젝트의 파일 등록, 필터 참조, 부모 필터와 클래스별 헤더/구현 쌍을 검증했다.
