@@ -11,4 +11,27 @@
   <ItemDefinitionGroup><ClCompile><AdditionalIncludeDirectories>$(ProjectDir)Renderer\Public;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories></ClCompile><Link><SubSystem>Windows</SubSystem><AdditionalDependencies>user32.lib;%(AdditionalDependencies)</AdditionalDependencies></Link><PostBuildEvent><Command>xcopy /E /I /Y "$(ProjectDir)Texture" "$(OutDir)Texture\"</Command></PostBuildEvent></ItemDefinitionGroup>
   <ItemGroup><ClCompile Include="Client\Private\real_dx_host.cpp" /><ClInclude Include="Renderer\Public\real_dx_api.h" /></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ItemDefinitionGroup><ClCompile><AdditionalIncludeDirectories>$(ProjectDir)Client\Public;$(ProjectDir)ThirdParty\nlohmann;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories></ClCompile></ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="Client\Private\EffectPresetLoader.cpp" />
+    <ClCompile Include="Client\Private\EffectFactory.cpp" />
+    <ClCompile Include="Client\Private\EffectPool.cpp" />
+    <ClCompile Include="Client\Private\EffectManager.cpp" />
+    <ClCompile Include="Client\Private\HumanoidModel.cpp" />
+    <ClCompile Include="Client\Private\BenchmarkRunner.cpp" />
+    <ClInclude Include="Client\Public\EffectPresetLoader.h" />
+    <ClInclude Include="Client\Public\EffectFactory.h" />
+    <ClInclude Include="Client\Public\EffectPool.h" />
+    <ClInclude Include="Client\Public\EffectManager.h" />
+    <ClInclude Include="Client\Public\HumanoidModel.h" />
+    <ClInclude Include="Client\Public\BenchmarkRunner.h" />
+    <ClInclude Include="Client\Public\Effect_Struct.h" />
+    <ClInclude Include="Client\Public\Effect_Function.h" />
+    <ClInclude Include="Renderer\Public\Lab_Struct.h" />
+    <None Include="Presets\Lab.json" />
+  </ItemGroup>
+  <Target Name="CopyPresets" AfterTargets="Build">
+    <MakeDir Directories="$(OutDir)Presets" />
+    <Copy SourceFiles="$(ProjectDir)Presets\Lab.json" DestinationFolder="$(OutDir)Presets" />
+  </Target>
 </Project>

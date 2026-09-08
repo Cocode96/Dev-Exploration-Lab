@@ -1,0 +1,13 @@
+{
+  "GameObjectName": "LabParticles",
+  "InstanceCount": 64,
+  "PointDesc": {
+    "LifetimeMin": 1.5, "LifetimeMax": 4.0,
+    "OriginMin": [-4,0.2,-4], "OriginMax": [4,4,4],
+    "VelocityMin": [-1,-0.1,-1], "VelocityMax": [1,1,1],
+    "SpeedMin": 0.4, "SpeedMax": 1.8,
+    "AccelerationMin": [0,-0.15,0], "AccelerationMax": [0,-0.15,0],
+    "StartColor": [0.1,0.9,1,0.8], "EndColor": [1,0.2,0.1,0],
+    "StartSize": [0.12,0.12], "EndSize": [0.02,0.02]
+  }
+}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Classes" />
+    <Filter Include="Classes\real_dx_renderer" />
+    <Filter Include="Classes\real_dx_api" />
+    <Filter Include="Classes\LabDebugPanel" />
+    <Filter Include="Classes\SceneGpuDx11" />
+    <Filter Include="Classes\SceneGpuDx12" />
+    <Filter Include="Definitions" />
+    <Filter Include="ThirdParty" />
+    <Filter Include="ThirdParty\ImGui" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Renderer\Private\real_dx_renderer.cpp"><Filter>Classes\real_dx_renderer</Filter></ClCompile>
+    <ClInclude Include="Renderer\Public\real_dx_api.h"><Filter>Classes\real_dx_api</Filter></ClInclude>
+    <ClCompile Include="Renderer\Private\LabDebugPanel.cpp"><Filter>Classes\LabDebugPanel</Filter></ClCompile>
+    <ClInclude Include="Renderer\Public\LabDebugPanel.h"><Filter>Classes\LabDebugPanel</Filter></ClInclude>
+    <ClCompile Include="Renderer\Private\SceneGpuDx11.cpp"><Filter>Classes\SceneGpuDx11</Filter></ClCompile>
+    <ClInclude Include="Renderer\Public\SceneGpuDx11.h"><Filter>Classes\SceneGpuDx11</Filter></ClInclude>
+    <ClCompile Include="Renderer\Private\SceneGpuDx12.cpp"><Filter>Classes\SceneGpuDx12</Filter></ClCompile>
+    <ClInclude Include="Renderer\Public\SceneGpuDx12.h"><Filter>Classes\SceneGpuDx12</Filter></ClInclude>
+    <ClInclude Include="Renderer\Public\Lab_Struct.h"><Filter>Definitions</Filter></ClInclude>
+    <ClInclude Include="Renderer\Public\Lab_Render_Constant.h"><Filter>Definitions</Filter></ClInclude>
+    <ClCompile Include="ThirdParty\imgui\imgui.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_tables.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\imgui_widgets.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\backends\imgui_impl_win32.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\backends\imgui_impl_dx11.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+    <ClCompile Include="ThirdParty\imgui\backends\imgui_impl_dx12.cpp"><Filter>ThirdParty\ImGui</Filter></ClCompile>
+  </ItemGroup>
+</Project>

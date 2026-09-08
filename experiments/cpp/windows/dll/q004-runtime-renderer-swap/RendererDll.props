@@ -15,6 +15,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Renderer\Private\real_dx_renderer.cpp" />
+    <ClCompile Include="Renderer\Private\LabDebugPanel.cpp" />
+    <ClCompile Include="Renderer\Private\SceneGpuDx11.cpp" />
+    <ClCompile Include="Renderer\Private\SceneGpuDx12.cpp" />
+    <ClInclude Include="Renderer\Public\LabDebugPanel.h" />
+    <ClInclude Include="Renderer\Public\SceneGpuDx11.h" />
+    <ClInclude Include="Renderer\Public\SceneGpuDx12.h" />
+    <ClInclude Include="Renderer\Public\Lab_Struct.h" />
+    <ClInclude Include="Renderer\Public\Lab_Render_Constant.h" />
     <ClCompile Include="ThirdParty\imgui\imgui.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_draw.cpp" />
     <ClCompile Include="ThirdParty\imgui\imgui_tables.cpp" />

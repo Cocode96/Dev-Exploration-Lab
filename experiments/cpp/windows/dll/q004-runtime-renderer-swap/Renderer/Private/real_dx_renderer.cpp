@@ -1,4 +1,7 @@
 #include "real_dx_api.h"
+#include "LabDebugPanel.h"
+#include "SceneGpuDx11.h"
+#include "SceneGpuDx12.h"
 
 #include <d3d11.h>
 #include <d3d12.h>
@@ -21,26 +24,27 @@
 #include <vector>
 
 using Microsoft::WRL::ComPtr;
+using namespace std;
 extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND, UINT, WPARAM, LPARAM);
 
 namespace
 {
-using Clock = std::chrono::steady_clock;
+using Clock = chrono::steady_clock;
 
 struct ImageData
 {
     unsigned width{};
     unsigned height{};
-    std::vector<unsigned char> rgba;
+    vector<unsigned char> rgba;
 };
 
 class TextureLoader
 {
   public:
-    static bool LoadPpm(const std::filesystem::path &path, ImageData &result)
+    static bool LoadPpm(const filesystem::path& path, ImageData& result)
     {
-        std::ifstream input(path);
-        std::string magic;
+        ifstream input(path);
+        string magic;
         unsigned maximum{};
         if (!(input >> magic >> result.width >> result.height >> maximum) || magic != "P3" || maximum != 255)
             return false;
@@ -62,13 +66,13 @@ class TextureLoader
 struct InputAssemblerComponent
 {
     ImTextureID texture{};
-    void DrawAt(ImDrawList *draw_list, const ImVec2 &minimum, const ImVec2 &maximum) const
+    void DrawAt(ImDrawList* draw_list, const ImVec2& minimum, const ImVec2& maximum) const
     {
         draw_list->AddImage(texture, minimum, maximum);
     }
 };
 
-D3D12_RESOURCE_BARRIER Transition(ID3D12Resource *resource, D3D12_RESOURCE_STATES before,
+D3D12_RESOURCE_BARRIER Transition(ID3D12Resource* resource, D3D12_RESOURCE_STATES before,
                                   D3D12_RESOURCE_STATES after)
 {
     D3D12_RESOURCE_BARRIER barrier{};
@@ -83,12 +87,12 @@ D3D12_RESOURCE_BARRIER Transition(ID3D12Resource *resource, D3D12_RESOURCE_STATE
 class RendererBase : public IRealRenderer
 {
   public:
-    bool InitializeCommon(HWND window, const wchar_t *textureRoot, ExperimentControls *controls,
-                          const wchar_t *file)
+    bool InitializeCommon(HWND window, const wchar_t* textureRoot, ExperimentControls* controls,
+                          const wchar_t* file)
     {
         window_ = window;
         controls_ = controls;
-        texture_path_ = std::filesystem::path(textureRoot) / file;
+        texture_path_ = filesystem::path(textureRoot) / file;
 
         if (!TextureLoader::LoadPpm(texture_path_, source_))
             return false;
@@ -96,9 +100,10 @@ class RendererBase : public IRealRenderer
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
 
-        ImGuiIO &io = ImGui::GetIO();
+        ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+        // DLL 교체 시 보조 OS 창의 수명 충돌을 피하도록 단일 도킹 창을 사용한다.
+        io.IniFilename = "renderer_lab.ini";
         if (io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\malgun.ttf", 18.0f, nullptr,
                                          io.Fonts->GetGlyphRangesKorean()) == nullptr)
         {
@@ -107,7 +112,7 @@ class RendererBase : public IRealRenderer
 
         ImGui::StyleColorsDark();
 
-        ImGuiStyle &style = ImGui::GetStyle();
+        ImGuiStyle& style = ImGui::GetStyle();
         style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 
@@ -119,110 +124,15 @@ class RendererBase : public IRealRenderer
         return ImGui_ImplWin32_WndProcHandler(window, message, wparam, lparam);
     }
 
-    double LastResourceBuildMilliseconds() const override
-    {
-        return resource_ms_;
-    }
-    double LastFrameCpuMilliseconds() const override
-    {
-        return frame_ms_;
-    }
+    double LastResourceBuildMilliseconds() const override { return resource_ms_; }
+    double LastFrameCpuMilliseconds() const override { return frame_ms_; }
 
   protected:
-    void DrawExperimentUi()
-    {
-        const ImGuiID dockspace = ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
-        ImGuiDockNode *dock_node = ImGui::DockBuilderGetNode(dockspace);
-
-        if (dock_node != nullptr && !dock_node->IsSplitNode())
-        {
-            ImGui::DockBuilderRemoveNode(dockspace);
-            ImGui::DockBuilderAddNode(dockspace, ImGuiDockNodeFlags_DockSpace);
-            ImGui::DockBuilderSetNodeSize(dockspace, ImGui::GetMainViewport()->WorkSize);
-            ImGuiID center = dockspace;
-            ImGuiID left{};
-            ImGuiID bottom{};
-            ImGuiID comparison{};
-
-            left = ImGui::DockBuilderSplitNode(center, ImGuiDir_Left, 0.30f, nullptr, &center);
-            bottom = ImGui::DockBuilderSplitNode(center, ImGuiDir_Down, 0.25f, nullptr, &center);
-            comparison = ImGui::DockBuilderSplitNode(left, ImGuiDir_Down, 0.58f, nullptr, &left);
-            ImGui::DockBuilderDockWindow("Experiment Controls", left);
-            ImGui::DockBuilderDockWindow("DLL Switch Comparison", comparison);
-            ImGui::DockBuilderDockWindow("Texture Objects", center);
-            ImGui::DockBuilderDockWindow("Experiment Log", bottom);
-            ImGui::DockBuilderFinish(dockspace);
-        }
-
-        ImGui::Begin("Experiment Controls");
-
-        bool separate = controls_->requestedDllLayout == RendererDllLayout::Separate;
-        if (ImGui::Checkbox("Separate DX DLLs", &separate))
-            controls_->requestedDllLayout =
-                separate ? RendererDllLayout::Separate : RendererDllLayout::Combined;
-        ImGui::Text("DLL Layout: %s", controls_->activeDllLayout == RendererDllLayout::Separate
-                                          ? "RealDx11Renderer.dll / RealDx12Renderer.dll"
-                                          : "RealDxCombinedRenderer.dll");
-
-        bool dx12 = controls_->requestedBackend == GraphicsBackend::DirectX12;
-        if (ImGui::Checkbox("DX12 DLL / Backend", &dx12))
-            controls_->requestedBackend = dx12 ? GraphicsBackend::DirectX12 : GraphicsBackend::DirectX11;
-        ImGui::Text("Active Backend: %s",
-                    controls_->activeBackend == GraphicsBackend::DirectX12 ? "DirectX 12" : "DirectX 11");
-
-        int count = static_cast<int>(controls_->textureObjectCount);
-        if (ImGui::SliderInt("Texture Objects", &count, 1, 1000))
-            controls_->textureObjectCount = static_cast<unsigned>(count);
-        ImGui::SeparatorText("Current Renderer");
-        ImGui::Text("Texture Resource Build: %.6f s", resource_ms_ / 1000.0);
-        ImGui::Text("Frame CPU: %.6f s  FPS: %.1f", frame_ms_ / 1000.0, ImGui::GetIO().Framerate);
-        ImGui::End();
-
-        ImGui::Begin("DLL Switch Comparison");
-
-        auto draw_timing = [](const char *title, const ExperimentControls::TimingStatistics &timing) {
-            ImGui::SeparatorText(title);
-            ImGui::Text("Samples: %u", timing.samples);
-            ImGui::Text("Last Total: %.6f s", timing.lastTotalMs / 1000.0);
-            ImGui::Text("  DLL Module Stage: %.6f s", timing.lastModuleMs / 1000.0);
-            ImGui::Text("  Renderer + Textures: %.6f s", timing.lastRendererMs / 1000.0);
-            ImGui::Text("Average: %.6f s", timing.averageTotalMs / 1000.0);
-            ImGui::Text("Min / Max: %.6f / %.6f s", timing.minimumTotalMs / 1000.0,
-                        timing.maximumTotalMs / 1000.0);
-        };
-        draw_timing("Combined DLL, Internal Backend Switch", controls_->combinedTiming);
-        draw_timing("Separate DLLs, Unload + Load", controls_->separateTiming);
-
-        if (controls_->combinedTiming.samples && controls_->separateTiming.samples)
-        {
-            const double difference =
-                controls_->separateTiming.averageTotalMs - controls_->combinedTiming.averageTotalMs;
-            ImGui::SeparatorText("Average Difference");
-            ImGui::Text("Separate - Combined: %+.6f s", difference / 1000.0);
-        }
-        ImGui::End();
-
-        ImGui::Begin("Texture Objects");
-        ImGui::Text("Source: %ls", texture_path_.c_str());
-        ImGui::Text("Submitted Every Frame: %zu Textured Quads", objects_.size());
-        DrawTextureGrid();
-        ImGui::End();
-
-        ImGui::Begin("Experiment Log");
-        ImGui::Text("[%s] %zu GPU Texture Resources",
-                    controls_->activeBackend == GraphicsBackend::DirectX12 ? "DX12" : "DX11",
-                    objects_.size());
-        ImGui::Text("[%s] Active DLL Layout",
-                    controls_->activeDllLayout == RendererDllLayout::Separate ? "Separate" : "Combined");
-        ImGui::Text("Last Resource Rebuild: %.6f s", resource_ms_ / 1000.0);
-        ImGui::TextWrapped("같은 Texture Object 수와 Backend 전환 조건에서만 두 결과를 비교하세요. "
-                           "첫 warm-up sample은 제외하고, 종료하려면 ESC를 누르세요.");
-        ImGui::End();
-    }
+    void DrawExperimentUi() { m_debug_panel.render(*controls_, m_scene_texture); }
 
     void FinishFrameTiming(Clock::time_point begin)
     {
-        frame_ms_ = std::chrono::duration<double, std::milli>(Clock::now() - begin).count();
+        frame_ms_ = chrono::duration<double, milli>(Clock::now() - begin).count();
     }
 
     void DrawTextureGrid()
@@ -230,18 +140,18 @@ class RendererBase : public IRealRenderer
         if (objects_.empty())
             return;
         ImVec2 available = ImGui::GetContentRegionAvail();
-        available.x = (std::max)(available.x, 64.0f);
-        available.y = (std::max)(available.y, 64.0f);
+        available.x = (max)(available.x, 64.0f);
+        available.y = (max)(available.y, 64.0f);
         const ImVec2 origin = ImGui::GetCursorScreenPos();
         ImGui::InvisibleButton("TextureGridCanvas", available);
 
         const unsigned count = static_cast<unsigned>(objects_.size());
-        const unsigned columns = static_cast<unsigned>(std::ceil(std::sqrt(static_cast<float>(count))));
+        const unsigned columns = static_cast<unsigned>(ceil(sqrt(static_cast<float>(count))));
         const unsigned rows = (count + columns - 1) / columns;
         const float gap = count > 400 ? 0.0f : 1.0f;
         const float cell_width = available.x / columns;
         const float cell_height = available.y / rows;
-        ImDrawList *draw_list = ImGui::GetWindowDrawList();
+        ImDrawList* draw_list = ImGui::GetWindowDrawList();
 
         for (unsigned i = 0; i < count; ++i)
         {
@@ -263,11 +173,13 @@ class RendererBase : public IRealRenderer
         }
     }
 
+    Lab::LabDebugPanel m_debug_panel;
+    ImTextureID m_scene_texture{};
     HWND window_{};
-    ExperimentControls *controls_{};
-    std::filesystem::path texture_path_;
+    ExperimentControls* controls_{};
+    filesystem::path texture_path_;
     ImageData source_;
-    std::vector<InputAssemblerComponent> objects_;
+    vector<InputAssemblerComponent> objects_;
     double resource_ms_{};
     double frame_ms_{};
 };
@@ -277,6 +189,8 @@ class Dx11Renderer final : public RendererBase
   public:
     ~Dx11Renderer()
     {
+        if (context_)
+            context_->ClearState();
         if (ImGui::GetCurrentContext())
         {
             ImGui_ImplDX11_Shutdown();
@@ -285,8 +199,8 @@ class Dx11Renderer final : public RendererBase
         }
     }
 
-    bool Initialize(HWND window, unsigned width, unsigned height, const wchar_t *root,
-                    ExperimentControls *controls) override
+    bool Initialize(HWND window, unsigned width, unsigned height, const wchar_t* root,
+                    ExperimentControls* controls) override
     {
         DXGI_SWAP_CHAIN_DESC desc{};
         desc.BufferCount = 2;
@@ -316,6 +230,9 @@ class Dx11Renderer final : public RendererBase
             !ImGui_ImplDX11_Init(device_.Get(), context_.Get()))
             return false;
 
+        if (!m_scene.initialize(device_.Get()))
+            return false;
+        m_scene_texture = reinterpret_cast<ImTextureID>(m_scene.view());
         return SetTextureObjectCount(controls->textureObjectCount);
     }
 
@@ -351,11 +268,11 @@ class Dx11Renderer final : public RendererBase
                 FAILED(device_->CreateShaderResourceView(texture.Get(), nullptr, &view)))
                 return false;
             objects_.push_back({reinterpret_cast<ImTextureID>(view.Get())});
-            textures_.push_back(std::move(texture));
-            views_.push_back(std::move(view));
+            textures_.push_back(move(texture));
+            views_.push_back(move(view));
         }
 
-        resource_ms_ = std::chrono::duration<double, std::milli>(Clock::now() - begin).count();
+        resource_ms_ = chrono::duration<double, milli>(Clock::now() - begin).count();
 
         return true;
     }
@@ -364,6 +281,8 @@ class Dx11Renderer final : public RendererBase
     {
         const auto begin = Clock::now();
 
+        controls_->lab.gpu_ms =
+            m_scene.render(context_.Get(), controls_->lab.scene, !controls_->lab.preconditioning);
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
@@ -377,27 +296,42 @@ class Dx11Renderer final : public RendererBase
         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
         RenderPlatformWindows();
 
-        swap_chain_->Present(1, 0);
+        swap_chain_->Present(controls_->lab.preconditioning ? 0 : 1, 0);
 
         FinishFrameTiming(begin);
     }
-    void WaitForIdle() override
+    bool WaitForIdle() override
     {
-        if (context_)
-            context_->Flush();
+        if (!context_)
+            return true;
+        // Flush는 제출만 한다. Event 쿼리가 완료되어야 이전 리소스를 해제할 수 있다.
+        D3D11_QUERY_DESC desc{D3D11_QUERY_EVENT, 0};
+        ComPtr<ID3D11Query> completed;
+        if (FAILED(device_->CreateQuery(&desc, &completed)))
+            return false;
+        context_->End(completed.Get());
+        context_->Flush();
+        const auto deadline = Clock::now() + chrono::seconds(5);
+        while (true)
+        {
+            const auto hr = context_->GetData(completed.Get(), nullptr, 0, 0);
+            if (hr == S_OK)
+                return true;
+            if (FAILED(hr) || Clock::now() > deadline)
+                return false;
+            Sleep(0);
+        }
     }
-    const wchar_t *Name() const override
-    {
-        return L"DirectX 11, blue texture";
-    }
+    const wchar_t* Name() const override { return L"DirectX 11, blue texture"; }
 
   private:
+    Lab::SceneGpuDx11 m_scene;
     ComPtr<ID3D11Device> device_;
     ComPtr<ID3D11DeviceContext> context_;
     ComPtr<IDXGISwapChain> swap_chain_;
     ComPtr<ID3D11RenderTargetView> rtv_;
-    std::vector<ComPtr<ID3D11Texture2D>> textures_;
-    std::vector<ComPtr<ID3D11ShaderResourceView>> views_;
+    vector<ComPtr<ID3D11Texture2D>> textures_;
+    vector<ComPtr<ID3D11ShaderResourceView>> views_;
 };
 
 class Dx12Renderer final : public RendererBase
@@ -416,8 +350,8 @@ class Dx12Renderer final : public RendererBase
             CloseHandle(fence_event_);
     }
 
-    bool Initialize(HWND window, unsigned width, unsigned height, const wchar_t *root,
-                    ExperimentControls *controls) override
+    bool Initialize(HWND window, unsigned width, unsigned height, const wchar_t* root,
+                    ExperimentControls* controls) override
     {
         if (FAILED(D3D12CreateDevice(nullptr, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&device_))))
             return false;
@@ -483,7 +417,7 @@ class Dx12Renderer final : public RendererBase
             return false;
 
         D3D12_DESCRIPTOR_HEAP_DESC srv_desc{};
-        srv_desc.NumDescriptors = 1001;
+        srv_desc.NumDescriptors = 1002;
         srv_desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
         srv_desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         if (FAILED(device_->CreateDescriptorHeap(&srv_desc, IID_PPV_ARGS(&srv_heap_))))
@@ -508,6 +442,13 @@ class Dx12Renderer final : public RendererBase
         if (!ImGui_ImplDX12_Init(&imgui_info))
             return false;
 
+        auto scene_cpu = srv_heap_->GetCPUDescriptorHandleForHeapStart();
+        scene_cpu.ptr += 1001ull * srv_size_;
+        if (!m_scene.initialize(device_.Get(), scene_cpu))
+            return false;
+        auto scene_gpu = srv_heap_->GetGPUDescriptorHandleForHeapStart();
+        scene_gpu.ptr += 1001ull * srv_size_;
+        m_scene_texture = static_cast<ImTextureID>(scene_gpu.ptr);
         return SetTextureObjectCount(controls->textureObjectCount);
     }
 
@@ -526,7 +467,7 @@ class Dx12Renderer final : public RendererBase
         allocators_[0]->Reset();
         list_->Reset(allocators_[0].Get(), nullptr);
 
-        std::vector<ComPtr<ID3D12Resource>> uploads;
+        vector<ComPtr<ID3D12Resource>> uploads;
 
         for (unsigned i = 0; i < count; ++i)
         {
@@ -572,12 +513,12 @@ class Dx12Renderer final : public RendererBase
                                                         IID_PPV_ARGS(&upload))))
                 return false;
 
-            unsigned char *mapped{};
-            upload->Map(0, nullptr, reinterpret_cast<void **>(&mapped));
+            unsigned char* mapped{};
+            upload->Map(0, nullptr, reinterpret_cast<void**>(&mapped));
 
             for (unsigned y = 0; y < source_.height; ++y)
-                std::copy_n(source_.rgba.data() + y * source_.width * 4, source_.width * 4,
-                            mapped + footprint.Offset + y * footprint.Footprint.RowPitch);
+                copy_n(source_.rgba.data() + y * source_.width * 4, source_.width * 4,
+                       mapped + footprint.Offset + y * footprint.Footprint.RowPitch);
 
             upload->Unmap(0, nullptr);
 
@@ -610,18 +551,18 @@ class Dx12Renderer final : public RendererBase
             device_->CreateShaderResourceView(texture.Get(), &sd, cpu);
 
             objects_.push_back({static_cast<ImTextureID>(gpu.ptr)});
-            textures_.push_back(std::move(texture));
-            uploads.push_back(std::move(upload));
+            textures_.push_back(move(texture));
+            uploads.push_back(move(upload));
         }
 
         list_->Close();
 
-        ID3D12CommandList *lists[]{list_.Get()};
+        ID3D12CommandList* lists[]{list_.Get()};
         queue_->ExecuteCommandLists(1, lists);
 
         WaitForIdle();
 
-        resource_ms_ = std::chrono::duration<double, std::milli>(Clock::now() - begin).count();
+        resource_ms_ = chrono::duration<double, milli>(Clock::now() - begin).count();
 
         return true;
     }
@@ -640,6 +581,8 @@ class Dx12Renderer final : public RendererBase
 
         allocators_[index]->Reset();
         list_->Reset(allocators_[index].Get(), nullptr);
+        if (!m_scene.render(list_.Get(), controls_->lab.scene))
+            controls_->lab.gpu_ms = -1;
 
         auto barrier = Transition(buffers_[index].Get(), D3D12_RESOURCE_STATE_PRESENT,
                                   D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -653,7 +596,7 @@ class Dx12Renderer final : public RendererBase
         list_->OMSetRenderTargets(1, &rtv, FALSE, nullptr);
         list_->ClearRenderTargetView(rtv, color, 0, nullptr);
 
-        ID3D12DescriptorHeap *heaps[]{srv_heap_.Get()};
+        ID3D12DescriptorHeap* heaps[]{srv_heap_.Get()};
         list_->SetDescriptorHeaps(1, heaps);
         ImGui_ImplDX12_RenderDrawData(ImGui::GetDrawData(), list_.Get());
 
@@ -662,57 +605,62 @@ class Dx12Renderer final : public RendererBase
         list_->ResourceBarrier(1, &barrier);
         list_->Close();
 
-        ID3D12CommandList *lists[]{list_.Get()};
+        ID3D12CommandList* lists[]{list_.Get()};
         queue_->ExecuteCommandLists(1, lists);
 
         RenderPlatformWindows();
 
-        swap_chain_->Present(1, 0);
-        WaitForIdle();
-
+        swap_chain_->Present(controls_->lab.preconditioning ? 0 : 1, 0);
+        if (!controls_->lab.preconditioning)
+        {
+            WaitForIdle();
+            controls_->lab.gpu_ms = m_scene.milliseconds(queue_.Get());
+        }
         FinishFrameTiming(begin);
     }
-    void WaitForIdle() override
+    bool WaitForIdle() override
     {
         if (!queue_ || !fence_ || !fence_event_)
-            return;
+            return true;
         const auto value = ++fence_value_;
-        queue_->Signal(fence_.Get(), value);
+        if (FAILED(queue_->Signal(fence_.Get(), value)))
+            return false;
         if (fence_->GetCompletedValue() < value)
         {
-            fence_->SetEventOnCompletion(value, fence_event_);
-            WaitForSingleObject(fence_event_, INFINITE);
+            if (FAILED(fence_->SetEventOnCompletion(value, fence_event_)))
+                return false;
+            if (WaitForSingleObject(fence_event_, 5000) != WAIT_OBJECT_0)
+                return false;
         }
+        return true;
     }
-    const wchar_t *Name() const override
-    {
-        return L"DirectX 12, orange texture";
-    }
+    const wchar_t* Name() const override { return L"DirectX 12, orange texture"; }
 
   private:
-    static void AllocateImGuiDescriptor(ImGui_ImplDX12_InitInfo *info, D3D12_CPU_DESCRIPTOR_HANDLE *cpu,
-                                        D3D12_GPU_DESCRIPTOR_HANDLE *gpu)
+    static void AllocateImGuiDescriptor(ImGui_ImplDX12_InitInfo* info, D3D12_CPU_DESCRIPTOR_HANDLE* cpu,
+                                        D3D12_GPU_DESCRIPTOR_HANDLE* gpu)
     {
-        auto *self = static_cast<Dx12Renderer *>(info->UserData);
+        auto* self = static_cast<Dx12Renderer*>(info->UserData);
         *cpu = self->srv_heap_->GetCPUDescriptorHandleForHeapStart();
         *gpu = self->srv_heap_->GetGPUDescriptorHandleForHeapStart();
     }
 
-    static void FreeImGuiDescriptor(ImGui_ImplDX12_InitInfo *, D3D12_CPU_DESCRIPTOR_HANDLE,
+    static void FreeImGuiDescriptor(ImGui_ImplDX12_InitInfo*, D3D12_CPU_DESCRIPTOR_HANDLE,
                                     D3D12_GPU_DESCRIPTOR_HANDLE)
     {
     }
 
     static constexpr unsigned frame_count_ = 2;
+    Lab::SceneGpuDx12 m_scene;
     ComPtr<ID3D12Device> device_;
     ComPtr<ID3D12CommandQueue> queue_;
     ComPtr<IDXGISwapChain3> swap_chain_;
     ComPtr<ID3D12DescriptorHeap> rtv_heap_, srv_heap_;
-    std::array<ComPtr<ID3D12Resource>, frame_count_> buffers_;
-    std::array<ComPtr<ID3D12CommandAllocator>, frame_count_> allocators_;
+    array<ComPtr<ID3D12Resource>, frame_count_> buffers_;
+    array<ComPtr<ID3D12CommandAllocator>, frame_count_> allocators_;
     ComPtr<ID3D12GraphicsCommandList> list_;
     ComPtr<ID3D12Fence> fence_;
-    std::vector<ComPtr<ID3D12Resource>> textures_;
+    vector<ComPtr<ID3D12Resource>> textures_;
     HANDLE fence_event_{};
     UINT rtv_size_{}, srv_size_{};
     UINT64 fence_value_{};
@@ -733,7 +681,7 @@ REAL_RENDERER_EXPORT bool ProbeBackend(GraphicsBackend backend)
 #endif
 }
 
-REAL_RENDERER_EXPORT IRealRenderer *CreateRealRenderer(GraphicsBackend backend)
+REAL_RENDERER_EXPORT IRealRenderer* CreateRealRenderer(GraphicsBackend backend)
 {
 #if defined(REAL_DX11_ONLY)
     return backend == GraphicsBackend::DirectX11 ? new Dx11Renderer{} : nullptr;
@@ -748,12 +696,12 @@ REAL_RENDERER_EXPORT IRealRenderer *CreateRealRenderer(GraphicsBackend backend)
 #endif
 }
 
-REAL_RENDERER_EXPORT void DestroyRealRenderer(IRealRenderer *renderer)
+REAL_RENDERER_EXPORT void DestroyRealRenderer(IRealRenderer* renderer)
 {
-    if (auto *dx12 = dynamic_cast<Dx12Renderer *>(renderer))
+    if (auto* dx12 = dynamic_cast<Dx12Renderer*>(renderer))
     {
         delete dx12;
         return;
     }
-    delete dynamic_cast<Dx11Renderer *>(renderer);
+    delete dynamic_cast<Dx11Renderer*>(renderer);
 }

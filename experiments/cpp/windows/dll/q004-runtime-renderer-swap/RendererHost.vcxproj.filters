@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Classes" />
+    <Filter Include="Classes\real_dx_host" />
+    <Filter Include="Classes\real_dx_api" />
+    <Filter Include="Classes\EffectPresetLoader" />
+    <Filter Include="Classes\EffectFactory" />
+    <Filter Include="Classes\EffectPool" />
+    <Filter Include="Classes\EffectManager" />
+    <Filter Include="Classes\HumanoidModel" />
+    <Filter Include="Classes\BenchmarkRunner" />
+    <Filter Include="Definitions" />
+    <Filter Include="Presets" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Client\Private\real_dx_host.cpp"><Filter>Classes\real_dx_host</Filter></ClCompile>
+    <ClInclude Include="Renderer\Public\real_dx_api.h"><Filter>Classes\real_dx_api</Filter></ClInclude>
+    <ClCompile Include="Client\Private\EffectPresetLoader.cpp"><Filter>Classes\EffectPresetLoader</Filter></ClCompile>
+    <ClInclude Include="Client\Public\EffectPresetLoader.h"><Filter>Classes\EffectPresetLoader</Filter></ClInclude>
+    <ClCompile Include="Client\Private\EffectFactory.cpp"><Filter>Classes\EffectFactory</Filter></ClCompile>
+    <ClInclude Include="Client\Public\EffectFactory.h"><Filter>Classes\EffectFactory</Filter></ClInclude>
+    <ClCompile Include="Client\Private\EffectPool.cpp"><Filter>Classes\EffectPool</Filter></ClCompile>
+    <ClInclude Include="Client\Public\EffectPool.h"><Filter>Classes\EffectPool</Filter></ClInclude>
+    <ClCompile Include="Client\Private\EffectManager.cpp"><Filter>Classes\EffectManager</Filter></ClCompile>
+    <ClInclude Include="Client\Public\EffectManager.h"><Filter>Classes\EffectManager</Filter></ClInclude>
+    <ClCompile Include="Client\Private\HumanoidModel.cpp"><Filter>Classes\HumanoidModel</Filter></ClCompile>
+    <ClInclude Include="Client\Public\HumanoidModel.h"><Filter>Classes\HumanoidModel</Filter></ClInclude>
+    <ClCompile Include="Client\Private\BenchmarkRunner.cpp"><Filter>Classes\BenchmarkRunner</Filter></ClCompile>
+    <ClInclude Include="Client\Public\BenchmarkRunner.h"><Filter>Classes\BenchmarkRunner</Filter></ClInclude>
+    <ClInclude Include="Client\Public\Effect_Struct.h"><Filter>Definitions</Filter></ClInclude>
+    <ClInclude Include="Client\Public\Effect_Function.h"><Filter>Definitions</Filter></ClInclude>
+    <ClInclude Include="Renderer\Public\Lab_Struct.h"><Filter>Definitions</Filter></ClInclude>
+    <None Include="Presets\Lab.json"><Filter>Presets</Filter></None>
+  </ItemGroup>
+</Project>
