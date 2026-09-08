@@ -44,6 +44,8 @@ python run_experiment.py sample_experiment.json
 - `report.md`: 구현별 성공 횟수, 중앙값, P95, 최솟값, 최댓값
 - `experiment_config.json`: 같은 조건으로 다시 실행할 수 있는 설정
 
+여러 구현의 성능을 공개 문서에서 비교할 때는 `raw_results.csv`를 측정 원본으로 유지하고, 기준 구현 대비 Speedup과 Normalized Time 같은 파생 지표를 별도 요약 CSV에 기록한다. 파생 지표는 기존 시간을 나눈 값이므로 재측정 없이 계산할 수 있으며, 어떤 구현을 `1.0` 기준으로 사용했는지 열 이름과 문서에 명시한다.
+
 ## 설정 파일
 
 ```json

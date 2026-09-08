@@ -345,7 +345,9 @@ HRESULT CUpdateBenchmark::Run(const std::filesystem::path& ReportPath)
 
     SummaryReport << "update_count,cpu_single_us,cpu_single_p95_us,cpu_single_ns_per_update,"
         "cpu_workers_us,cpu_workers_p95_us,cpu_workers_ns_per_update,"
-        "gpu_submit_us,gpu_kernel_us,gpu_wall_us\n";
+        "cpu_workers_speedup_vs_single,cpu_workers_normalized_time,"
+        "gpu_submit_us,gpu_kernel_us,gpu_wall_us,"
+        "gpu_wall_speedup_vs_single,gpu_wall_normalized_time\n";
     SummaryReport << std::fixed << std::setprecision(6);
 
     for (const BENCHMARK_RESULT& Result : Results)
@@ -355,9 +357,13 @@ HRESULT CUpdateBenchmark::Run(const std::filesystem::path& ReportPath)
             << (Result.fCPUSingleUS * 1000.0 / Result.iUpdateCount) << ','
             << Result.fCPUWorkersUS << ',' << Result.fCPUWorkersP95US << ','
             << (Result.fCPUWorkersUS * 1000.0 / Result.iUpdateCount) << ','
+            << (Result.fCPUSingleUS / Result.fCPUWorkersUS) << ','
+            << (Result.fCPUWorkersUS / Result.fCPUSingleUS) << ','
             << Result.fGPUSubmitUS << ','
             << Result.fGPUKernelUS << ','
-            << Result.fGPUWallUS << '\n';
+            << Result.fGPUWallUS << ','
+            << (Result.fCPUSingleUS / Result.fGPUWallUS) << ','
+            << (Result.fGPUWallUS / Result.fCPUSingleUS) << '\n';
     }
 
     auto WorkerBreakEven = std::find_if(Results.begin(), Results.end(), [](const BENCHMARK_RESULT& Result)

@@ -25,7 +25,7 @@ Python Experiment Runner로 `renderer_compare.exe`의 두 구조를 반복 실�
 - A/B 실행 순서를 고정 seed로 혼합
 - 성공 횟수, 중앙값, P95, 최솟값, 최댓값 기록
 
-실행 도구와 설정은 [`experiments/python/benchmark-runner`](../../../experiments/python/benchmark-runner)에 있다. 원본 측정값은 [`raw_results.csv`](../../../experiments/python/benchmark-runner/reports/q004-dll-architecture-comparison/raw_results.csv)에 보존했다.
+실행 도구와 설정은 [`experiments/python/benchmark-runner`](../../../experiments/python/benchmark-runner)에 있다. 원본 측정값은 [`raw_results.csv`](../../../experiments/python/benchmark-runner/reports/q004-dll-architecture-comparison/raw_results.csv)에 보존했고, 기존 값에서 계산한 상대 지표는 [`summary_results.csv`](../../../experiments/python/benchmark-runner/reports/q004-dll-architecture-comparison/summary_results.csv)에 분리했다.
 
 별도의 실제 렌더러 구현에서는 텍스처를 바인딩하고 백엔드 전환 시 리소스를 다시 만드는 흐름까지 최소한으로 확인했다. 다만 아래 30회 수치는 DLL 구조 자체를 비교한 마이크로벤치마크다.
 
@@ -37,6 +37,8 @@ Python Experiment Runner로 `renderer_compare.exe`의 두 구조를 반복 실�
 | 단일 DLL 내부 전환 | 30/30 | 3.50us | 9.30us | 3.20us | 22.90us |
 
 이번 마이크로벤치마크에서 분리 DLL 전환 중앙값은 단일 DLL 내부 전환보다 약 273배 컸다. 두 분포도 겹치지 않았다. 분리 DLL의 최솟값 881.40us는 단일 DLL의 최댓값 22.90us보다 컸다.
+
+단일 DLL 내부 전환의 중앙값을 정규화 시간 `1.0`으로 두면 분리 DLL은 `272.871`이다. 반대로 단일 DLL은 분리 DLL보다 `272.871배` 빠르다. 이는 기존 중앙값 `955.05 / 3.50`에서 계산한 상대 지표이며 재측정 결과가 아니다.
 
 DLL 파일 크기 합계는 분리 구조가 28,672바이트, 단일 DLL이 15,360바이트였다.
 

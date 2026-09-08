@@ -42,8 +42,11 @@
     <Link><SubSystem>Console</SubSystem><EnableCOMDATFolding>true</EnableCOMDATFolding><OptimizeReferences>true</OptimizeReferences><GenerateDebugInformation>true</GenerateDebugInformation><AdditionalDependencies>d3d11.lib;d3dcompiler.lib;dxgi.lib;%(AdditionalDependencies)</AdditionalDependencies></Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Benchmark\Public\BonePaletteBenchmark.h" />
     <ClInclude Include="Benchmark\Public\UpdateBenchmark.h" />
-    <ClCompile Include="Client\Private\main.cpp" /><ClCompile Include="Benchmark\Private\UpdateBenchmark.cpp" />
+    <ClCompile Include="Client\Private\main.cpp" />
+    <ClCompile Include="Benchmark\Private\BonePaletteBenchmark.cpp" />
+    <ClCompile Include="Benchmark\Private\UpdateBenchmark.cpp" />
     <None Include="Shader\ComputeUpdate.hlsl" />
   </ItemGroup>
   <Target Name="CopyShader" AfterTargets="Build"><Copy SourceFiles="$(ProjectDir)Shader\ComputeUpdate.hlsl" DestinationFolder="$(OutDir)" /></Target>

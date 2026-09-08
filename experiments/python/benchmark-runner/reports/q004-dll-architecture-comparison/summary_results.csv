@@ -1,0 +1,3 @@
+variant,total_switch_median_us,total_switch_p95_us,total_switch_min_us,total_switch_max_us,normalized_time_vs_combined,combined_speedup_vs_variant
+combined_dll,3.500000,9.300000,3.200000,22.900000,1.000000,1.000000
+separate_dll,955.050000,1186.700000,881.400000,1260.400000,272.871429,272.871429

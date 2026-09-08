@@ -1,4 +1,5 @@
 #include "UpdateBenchmark.h"
+#include "BonePaletteBenchmark.h"
 
 #include <iostream>
 
@@ -22,6 +23,14 @@ int wmain(int argc, wchar_t* argv[])
     if (FAILED(Benchmark.Run(ReportPath)))
     {
         std::cerr << "DX11 Update 벤치마크 실행에 실패했습니다." << std::endl;
+        return 1;
+    }
+
+    CBonePaletteBenchmark BoneBenchmark;
+
+    if (FAILED(BoneBenchmark.Run(ReportPath.parent_path())))
+    {
+        std::cerr << "Bone Palette 벤치마크 실행에 실패했습니다." << std::endl;
         return 1;
     }
 
