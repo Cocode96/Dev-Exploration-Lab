@@ -145,6 +145,30 @@ std::wstring BenchmarkManager::status_text() const
     return text.str();
 }
 
+std::vector<BenchmarkManager::ResultSummary> BenchmarkManager::result_summaries() const
+{
+    std::vector<ResultSummary> summaries;
+    summaries.reserve(m_results.size());
+    for (const auto& result : m_results)
+    {
+        std::vector<double> total;
+        std::vector<double> sort;
+        total.reserve(result.samples.size());
+        sort.reserve(result.samples.size());
+        for (const auto& sample : result.samples)
+        {
+            total.push_back(sample.gpu_total_ms);
+            sort.push_back(sample.cpu_sort_ms);
+        }
+        const auto total_stats = summarize(total);
+        summaries.push_back({result.phase.scene, result.phase.mode, result.phase.instance_count,
+            total_stats.mean, total_stats.p95, summarize(sort).mean,
+            result.samples.empty() ? 0u : result.samples.front().total_draw_calls,
+            result.samples.empty() ? 0u : result.samples.front().transparency_draw_calls});
+    }
+    return summaries;
+}
+
 void BenchmarkManager::write_results() const
 {
     std::filesystem::create_directories(m_output_directory);

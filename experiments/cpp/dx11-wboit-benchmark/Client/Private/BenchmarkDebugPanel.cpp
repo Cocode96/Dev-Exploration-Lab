@@ -122,8 +122,11 @@ void BenchmarkDebugPanel::render(
         context.debug_ui_manager().log(Engine::DebugLogLevel::Info,
             "Full benchmark started. UI cost is excluded from GPU timestamps.");
     else if (!benchmark_running && m_previous_benchmark_running)
+    {
+        m_open_benchmark_result = true;
         context.debug_ui_manager().log(Engine::DebugLogLevel::Success,
             "Full benchmark completed. CSV written to reports/local/windowed.");
+    }
     m_previous_benchmark_running = benchmark_running;
 
     if (m_auto_flip_order && !benchmark_running)
@@ -139,6 +142,7 @@ void BenchmarkDebugPanel::render(
 
     render_experiment_controls(context, output_directory);
     render_performance(context);
+    render_benchmark_result(context);
 }
 
 void BenchmarkDebugPanel::render_experiment_controls(
@@ -422,5 +426,65 @@ void BenchmarkDebugPanel::render_performance(Engine::ApplicationContext& context
         "GPU timestamps cover sky, terrain and transparency. ImGui and Present are excluded so the debug tool does not contaminate the benchmark result.",
         "GPU 타임스탬프는 하늘, 지형과 투명도 렌더링을 포함합니다. 디버그 도구가 결과를 오염시키지 않도록 ImGui와 Present는 측정에서 제외합니다."));
     ImGui::End();
+}
+
+void BenchmarkDebugPanel::render_benchmark_result(Engine::ApplicationContext& context)
+{
+    const auto language = context.debug_ui_manager().language();
+    if (m_open_benchmark_result)
+    {
+        ImGui::OpenPopup(ui_text(language, "Benchmark Result", "벤치마크 결과"));
+        m_open_benchmark_result = false;
+    }
+
+    ImGui::SetNextWindowSize({680.0f, 0.0f}, ImGuiCond_Appearing);
+    if (!ImGui::BeginPopupModal(ui_text(language, "Benchmark Result", "벤치마크 결과"),
+        nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    ImGui::TextColored({0.33f, 0.78f, 0.71f, 1.0f}, "%s",
+        ui_text(language, "Full benchmark completed", "전체 벤치마크 완료"));
+    ImGui::TextWrapped("%s", ui_text(language,
+        "Comparison sample: Particle Stress, 1024 instances. GPU timestamps exclude ImGui and Present.",
+        "비교 샘플: 파티클 스트레스, 1024개 인스턴스. GPU 타임스탬프에는 ImGui와 Present가 포함되지 않습니다."));
+    ImGui::Separator();
+
+    const auto summaries = context.benchmark_manager().result_summaries();
+    if (ImGui::BeginTable("BenchmarkResultTable", 5,
+        ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp))
+    {
+        ImGui::TableSetupColumn(ui_text(language, "Method", "처리 방식"));
+        ImGui::TableSetupColumn(ui_text(language, "GPU total (ms)", "GPU 전체 (ms)"));
+        ImGui::TableSetupColumn(ui_text(language, "GPU p95 (ms)", "GPU p95 (ms)"));
+        ImGui::TableSetupColumn(ui_text(language, "CPU Z sort (ms)", "CPU Z 정렬 (ms)"));
+        ImGui::TableSetupColumn(ui_text(language, "Draw calls", "드로우 콜"));
+        ImGui::TableHeadersRow();
+
+        for (const auto& summary : summaries)
+        {
+            if (summary.scene != Engine::SceneType::EffectStress || summary.instance_count != 1024)
+                continue;
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextUnformatted(method_name(summary.mode, language));
+            ImGui::TableSetColumnIndex(1);
+            ImGui::Text("%.4f", summary.gpu_total_mean_ms);
+            ImGui::TableSetColumnIndex(2);
+            ImGui::Text("%.4f", summary.gpu_total_p95_ms);
+            ImGui::TableSetColumnIndex(3);
+            ImGui::Text("%.4f", summary.cpu_sort_mean_ms);
+            ImGui::TableSetColumnIndex(4);
+            ImGui::Text("%u / %u", summary.total_draw_calls, summary.transparency_draw_calls);
+        }
+        ImGui::EndTable();
+    }
+
+    ImGui::Spacing();
+    ImGui::TextDisabled("%s", ui_text(language,
+        "Read the CSV for every scene and instance count.",
+        "전체 장면과 인스턴스 수별 결과는 CSV에서 확인하세요."));
+    if (ImGui::Button(ui_text(language, "Close", "닫기")))
+        ImGui::CloseCurrentPopup();
+    ImGui::EndPopup();
 }
 }
