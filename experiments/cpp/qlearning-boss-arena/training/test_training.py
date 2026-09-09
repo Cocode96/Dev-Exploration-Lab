@@ -2,11 +2,12 @@ import copy
 import random
 import tempfile
 import unittest
+import subprocess
 from pathlib import Path
 import numpy as np
 import torch
 from algorithms import Agent, distribution, tensor
-from environment import Environment, table_state
+from environment import Environment, table_state, ROOT
 from train import defaults, evaluate, run, validate
 
 
@@ -40,7 +41,7 @@ class TrainingTests(unittest.TestCase):
             env.step(3)
 
     def test_invalid_configuration(self):
-        for change in (dict(lr=-1), dict(gamma=2), dict(batch=0), dict(epsilon_min=.9), dict(mode="FAKE")):
+        for change in (dict(lr=-1), dict(gamma=2), dict(batch=0), dict(epsilon_min=.9), dict(mode="FAKE"), dict(sac_alpha=float("nan"))):
             with self.assertRaises(ValueError):
                 validate(defaults() | change)
 
@@ -105,6 +106,11 @@ class TrainingTests(unittest.TestCase):
                             py = agent.policy(tensor(obs)).detach().numpy()
                             cpp = env.cpp_forward(exported, obs)
                             np.testing.assert_allclose(py, cpp, rtol=2e-5, atol=2e-5)
+                        score = evaluate(agent, Environment(1), 3)
+                        completed = subprocess.run([str(ROOT / "build/Release/Containment.exe"), "--eval-model", str(exported), "3", "1000000"], capture_output=True, text=True, check=True)
+                        fields = dict(item.split("=") for item in completed.stdout.split())
+                        self.assertEqual(int(fields["wins"]), round(score[1] * 3))
+                        self.assertAlmostEqual(float(fields["mean_reward"]), score[0], places=3)
                         bad = Path(folder) / "invalid.nn"
                         bad.write_text("ARENA_NN_V1 FAKE 24 64 6 0\n")
                         with self.assertRaises(RuntimeError):
