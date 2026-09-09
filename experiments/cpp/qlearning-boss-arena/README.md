@@ -4,6 +4,20 @@ Lab 안에서 실행하는 C++/DirectX 11 탑뷰 보스 전투 실험이다. 격
 
 ## 실행
 
+현재 우선순위는 모델 추가가 아닌 **Q-table이 학습할 수 있는 환경 검증**이다. [포트폴리오 고찰과 Discussion](https://github.com/Cocode96/Dev-Exploration-Lab/discussions/23)에 관찰, 결과와 남은 가설을 구분했다.
+
+`TRAINING LAB`에서 Q-table과 Rookie를 선택해 시작한다. 상대는 Target(0), Rookie(1), Rusher(2), Kiter(3), Legacy(4)다. 오른쪽 관전 상대와 학습 상대는 독립적이므로 모델을 불러온 뒤 관전 상대도 직접 맞춘다. `Rule boss (baseline)`으로 학습 없는 기준 보스와 비교한다. 피해량, 적중률과 행동 비율도 함께 확인한다. 적중 기회는 부채꼴 탄환 7발, 다른 공격은 1회로 센다.
+
+Kiter는 목표 거리를 170~250에서 뽑고 0.25~0.55초 동안 이동, 조준, 회피 판단을 유지한다. 이동 속도는 플레이어의 85%에서 70%로 낮췄다. 매 프레임 완벽하게 추적하지 않도록 한 연습 상대이며, 독립 난수 엔진과 reset seed로 재현한다. 기존 Legacy는 변경하지 않았다. 난도 자동 승급과 혼합 상대 학습은 아직 미구현이다.
+
+```powershell
+.\.venv\Scripts\python.exe training\train.py --mode QTABLE --bot 1 --episodes 500 --run runs/my-rookie-run
+.\.venv\Scripts\python.exe training\benchmark_bots.py --games 100
+.\.venv\Scripts\python.exe training\benchmark_bots.py --games 100 --checkpoint runs/my-rookie-run/best.pt
+```
+
+새 학습의 기본 상대는 Rookie다. `evaluate.py`는 저장 설정의 상대를 사용하고 `--bot`으로 바꿀 수 있다. 상대 설정이 없는 옛 체크포인트는 Legacy로 평가한다. 환경 코드가 달라지면 같은 seed라도 이전 결과와 같지 않으므로 비교 시 코드 버전도 기록한다.
+
 Visual Studio 2026 Community의 C++ 데스크톱 개발 도구와 Windows SDK, v145 도구 집합이 필요하다. Python 학습에는 Python 3.12, uv와 CPU PyTorch/NumPy를 사용한다. 프로젝트 전용 `.venv`에 설치하며 GPU는 필요하지 않다.
 
 1. `build.cmd`를 실행한다. 게임 EXE와 Python이 호출할 `ArenaTraining.dll`을 함께 만든다. Visual Studio 솔루션만 빌드하면 EXE만 생성하므로 첫 설정 시에는 이 스크립트를 사용한다.
