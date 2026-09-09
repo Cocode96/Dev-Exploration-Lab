@@ -40,6 +40,25 @@ class TrainingTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             env.step(3)
 
+    def test_noisy_kiter_reproducible_by_seed(self):
+        env = Environment(0)
+        def trajectory(seed):
+            env.reset(seed)
+            items = []
+            for _ in range(20):
+                x, _, reward, done, _, _, _ = env.step(env.baseline_action())
+                items.append((x.tolist(), reward, done))
+                if done:
+                    break
+            return items
+        try:
+            env.set_bot(3)
+            first = trajectory(123)
+            self.assertEqual(first, trajectory(123))
+            self.assertNotEqual(first, trajectory(124))
+        finally:
+            env.set_bot(4)
+
     def test_invalid_configuration(self):
         for change in (dict(lr=-1), dict(gamma=2), dict(batch=0), dict(epsilon_min=.9), dict(mode="FAKE"), dict(sac_alpha=float("nan"))):
             with self.assertRaises(ValueError):

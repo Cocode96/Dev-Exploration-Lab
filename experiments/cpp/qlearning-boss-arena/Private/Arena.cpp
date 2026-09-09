@@ -40,9 +40,10 @@ bool QTable::load(const string& path){
     for(auto& row:candidate.values)for(float& v:row)if(!(file>>v)||!isfinite(v))return false;
     file>>ws;if(!file.eof())return false;*this=candidate;return true;
 }
-Arena::Arena(unsigned seed):rng(seed){reset();}
+Arena::Arena(unsigned seed):rng(seed),botRng(seed ^ 0x9e3779b9u){reset();}
 void Arena::reset(){
     stats={};
+    heldBotInput={};nextBotDecision=0;
     player.position={155,320};player.hp=100;player.radius=13;
     boss.position={740,320};boss.hp=260;boss.radius=29;
     bullets.clear();phase=Phase::Decide;action=Approach;cooldown={};
@@ -63,17 +64,24 @@ void Arena::move(Actor& actor,Vec delta){
     actor.position=p;
 }
 Input Arena::botInput(){
+    // 거리 유지 봇은 일정 시간 이전 판단을 유지한다. 프레임마다 난수를 뽑지 않는다.
+    if(bot==Kiter && elapsed<nextBotDecision)return heldBotInput;
     if(bot!=Legacy){
         Input result;result.aim=boss.position;
         if(bot==Target)return result;
         Vec d=boss.position-player.position;float distance=length(d);Vec u=unit(d),side{-u.y,u.x};
         float desired=bot==Rookie?130.f:bot==Rusher?65.f:210.f;
+        if(bot==Kiter)desired=uniform_real_distribution<float>(170.f,250.f)(botRng);
         float toward=distance>desired+20?1.f:distance<desired-20?-1.f:0.f;
         result.move=u*toward+side*(bot==Kiter?.7f:.2f)*(sin(botClock)>0?1.f:-1.f);
-        result.speedScale=bot==Rookie?.5f:bot==Rusher?.75f:.85f;
+        result.speedScale=bot==Rookie?.5f:bot==Rusher?.75f:.7f;
         result.fireInterval=bot==Rookie?.65f:.4f;result.fire=true;
         // 숙련 봇도 공격 종료 시각을 정확히 읽지 않고 예고에 늦게 반응한다.
         result.dodge=bot==Kiter&&phase==Phase::Windup&&phaseTime-timer>.35f&&distance<220;
+        if(bot==Kiter){
+            nextBotDecision=elapsed+uniform_real_distribution<float>(.25f,.55f)(botRng);
+            heldBotInput=result;
+        }
         return result;
     }
     Vec d=boss.position-player.position;float distance=length(d);Vec u=unit(d);
@@ -84,7 +92,7 @@ Input Arena::botInput(){
     return result;
 }
 const char* Arena::botName(int bot){
-    static const char* names[]={"Target (no fire)","Rookie (slow, no dodge)","Rusher (close range)","Kiter (delayed dodge)","Legacy (hard benchmark)"};
+    static const char* names[]={"Target (no fire)","Rookie (slow, no dodge)","Rusher (close range)","Kiter (noisy, delayed)","Legacy (hard benchmark)"};
     return bot>=0&&bot<BotCount?names[bot]:"Unknown";
 }
 int Arena::baselineAction() const {

@@ -54,13 +54,16 @@ public:
     explicit Arena(unsigned seed=17);
     void reset();
     void tick(QTable& q, const Input& input, bool learning, int forcedAction=-1);
-    void reseed(unsigned seed) { rng.seed(seed); reset(); }
+    void reseed(unsigned seed) { rng.seed(seed); botRng.seed(seed ^ 0x9e3779b9u); reset(); }
     Input botInput();
     int state() const;
     array<bool,ActionCount> legal() const;
     void cancelSample() { pending=false; }
 private:
     mt19937 rng;
+    mt19937 botRng;
+    Input heldBotInput;
+    float nextBotDecision{};
     float timer{}, decisionSeconds{}, reward{}, botClock{};
     int decisionState{};
     bool pending{}, hit{};
