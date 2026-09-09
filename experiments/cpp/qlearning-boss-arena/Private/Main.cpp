@@ -140,6 +140,7 @@ int main(int argc,char** argv){
     if(!smoke)ShowWindow(window,SW_SHOW);
     Arena arena;QTable policy;bool automatic=true,learning=true,paused=false;int trainingRemaining=0;int trained=0;string status="Observe the bot, train, then take control.";
     NeuralPolicy neural;TrainingPanel training;
+    bool baseline=false;arena.bot=Arena::Rookie;
     if(trainerSmoke){
         string algorithm=argc>2?argv[2]:"DQN";
         if(algorithm!="DQN"&&algorithm!="PPO"&&algorithm!="SAC"&&algorithm!="QTABLE")throw runtime_error("Invalid smoke algorithm");
@@ -157,7 +158,7 @@ int main(int argc,char** argv){
         if(IsIconic(window)){Sleep(16);previous=chrono::steady_clock::now();continue;}
         if(resizePending){context->OMSetRenderTargets(0,nullptr,nullptr);target.Reset();if(FAILED(swapchain->ResizeBuffers(0,0,0,DXGI_FORMAT_UNKNOWN,0))||!renderTarget())throw runtime_error("Resize failed");resizePending=false;}
         ui.begin_frame();auto now=chrono::steady_clock::now();accumulator+=min(.1,chrono::duration<double>(now-previous).count());previous=now;
-        auto display=ImGui::GetIO().DisplaySize;scale=min((display.x-315.f)/920.f,(display.y-400.f)/640.f);scale=max(.1f,scale);
+        auto display=ImGui::GetIO().DisplaySize;scale=min((display.x-315.f)/920.f,(display.y-500.f)/640.f);scale=max(.1f,scale);
         origin.x=max(18.f,(display.x-315.f-920*scale)*.5f);
         int oldMode=training.mode;
         float panelY=origin.y+640*scale+12;
@@ -169,7 +170,7 @@ int main(int argc,char** argv){
                 success=neural.load(path);
                 if(success)training.mode=neural.algorithm=="DQN"?1:neural.algorithm=="PPO"?2:3;
             }else{success=policy.load(path);if(success)training.mode=0;}
-            if(success){activeModel=filesystem::path(path).stem().string();trainingRemaining=0;trained=0;learning=false;paused=true;arena.reset();accumulator=0;status="Loaded. Unpause to observe, or fight.";}
+            if(success){baseline=false;activeModel=filesystem::path(path).stem().string();trainingRemaining=0;trained=0;learning=false;paused=true;arena.reset();accumulator=0;status="Loaded. Set preview opponent to match the run, then unpause.";}
             else status="Load failed. Current policy retained.";
         };
         if(!training.loadRequested.empty()){loadPolicy(training.loadRequested);training.loadRequested.clear();}
@@ -178,19 +179,22 @@ int main(int argc,char** argv){
         ImGui::SetNextWindowPos({display.x-285,86});ImGui::SetNextWindowSize({270,display.y-106});
         ImGui::Begin("CONTROL ROOM",nullptr,ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoCollapse);
         ImGui::TextColored({.3f,.9f,.85f,1},"CONTAINMENT / SECTOR 07");ImGui::Separator();
+        if(ImGui::Checkbox("Rule boss (baseline)",&baseline)){learning=false;paused=false;trainingRemaining=0;arena.reset();}
+        ImGui::SetNextItemWidth(-1);
+        if(ImGui::BeginCombo("##previewBot",Arena::botName(arena.bot))){for(int i=0;i<Arena::BotCount;++i)if(ImGui::Selectable(Arena::botName(i),arena.bot==i)){arena.bot=static_cast<Arena::Bot>(i);arena.reset();}ImGui::EndCombo();}
         if(ImGui::Checkbox("Automatic player",&automatic)){arena.reset();accumulator=0;}
-        ImGui::BeginDisabled(neuralMode);
+        ImGui::BeginDisabled(neuralMode||baseline);
         if(ImGui::Checkbox("Live Q-table learning",&learning))arena.cancelSample();
         ImGui::EndDisabled();
         if(neuralMode)ImGui::TextWrapped("Neural training: use TRAINING LAB. This arena runs inference only.");
         ImGui::Checkbox("Pause",&paused);
         ImGui::BeginDisabled(neuralMode);
-        if(ImGui::Button("Quick Q-table 500 (no curves)",{-1,32})){trainingRemaining=500;automatic=true;learning=true;paused=false;arena.reset();}
+        if(ImGui::Button("Quick Q-table 500 (no curves)",{-1,32})){baseline=false;trainingRemaining=500;automatic=true;learning=true;paused=false;arena.reset();}
         ImGui::EndDisabled();
-        ImGui::BeginDisabled(!policyReady);
+        ImGui::BeginDisabled(!policyReady&&!baseline);
         if(ImGui::Button("Fight the trained boss",{-1,32})){automatic=false;learning=false;trainingRemaining=0;paused=false;arena.reset();}
         ImGui::EndDisabled();
-        if(!policyReady)ImGui::TextColored({1,.65f,.3f,1},"Load a model for this mode first.");
+        if(!policyReady&&!baseline)ImGui::TextColored({1,.65f,.3f,1},"Load a model for this mode first.");
         if(ImGui::Button("Restart round"))arena.reset();
         ImGui::Separator();ImGui::TextUnformatted("MODEL LIBRARY");
         ImGui::SetNextItemWidth(-1);ImGui::InputTextWithHint("##modelName","Snapshot name",modelName,sizeof(modelName));
@@ -219,6 +223,11 @@ int main(int argc,char** argv){
         if(ImGui::Button("Clear current policy")){if(neuralMode){neural={};paused=true;}else policy={};arena.reset();trainingRemaining=0;activeModel="Unsaved";}
         ImGui::Separator();ImGui::Text("Episode: %u   trained: %d",arena.episode,trained);
         ImGui::Text("Model updates: %u",neuralMode?neural.updates:policy.updates);ImGui::Text("FSM: %s",phaseName(arena.phase));ImGui::TextWrapped("Action: %s",actionName(arena.action));ImGui::Text("Last Q reward: %.2f",arena.lastReward);
+        unsigned decisions=0;for(auto n:arena.stats.choices)decisions+=n;
+        ImGui::Text("Damage dealt/taken: %.0f / %.0f",arena.stats.dealt,arena.stats.taken);
+        ImGui::Text("Hits: %u / %u (%.1f%%)",arena.stats.hits,arena.stats.attempts,100.f*arena.stats.hits/max(1u,arena.stats.attempts));
+        ImGui::Text("Orbit choices: %.1f%%",100.f*arena.stats.choices[Orbit]/max(1u,decisions));
+        if(ImGui::CollapsingHeader("ACTION SELECTION RATIOS"))for(int a=0;a<ActionCount;++a)ImGui::Text("%s: %.1f%%",actionName(a),100.f*arena.stats.choices[a]/max(1u,decisions));
         if(trainingRemaining)ImGui::Text("Training left: %d",trainingRemaining);
         if(ImGui::CollapsingHeader("CURRENT ACTION VALUES / LOGITS")){
             auto values=neuralMode?neural.forward(NeuralPolicy::observe(arena)):policy.values[arena.state()];
@@ -236,7 +245,7 @@ int main(int argc,char** argv){
             accumulator=0;
         }else{
             while(accumulator>=1.0/60){
-                if(!paused&&!arena.done&&policyReady)arena.tick(policy,automatic?arena.botInput():user,learning&&!neuralMode,neuralMode&&arena.phase==Phase::Decide?neural.choose(arena):-1);
+                if(!paused&&!arena.done&&(policyReady||baseline))arena.tick(policy,automatic?arena.botInput():user,learning&&!neuralMode&&!baseline,arena.phase==Phase::Decide?(baseline?arena.baselineAction():neuralMode?neural.choose(arena):-1):-1);
                 accumulator-=1.0/60;
             }
         }

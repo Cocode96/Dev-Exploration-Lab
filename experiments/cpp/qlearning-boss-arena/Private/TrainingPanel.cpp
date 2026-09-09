@@ -1,4 +1,5 @@
 #include "TrainingPanel.h"
+#include "Arena.h"
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -38,7 +39,7 @@ void TrainingPanel::start(){
     runPath=stamp;error_code error;filesystem::create_directories(runPath,error);
     if(error){status="Cannot create run folder.";return;}
     ostringstream cmd;cmd<<'"'<<python.string()<<"\" -u training/train.py --run \""<<runPath<<"\" --mode "<<ids[mode]
-        <<" --episodes "<<episodes<<" --lr "<<lr<<" --table-lr "<<tableLr<<" --gamma "<<gamma
+        <<" --bot "<<opponent<<" --episodes "<<episodes<<" --lr "<<lr<<" --table-lr "<<tableLr<<" --gamma "<<gamma
         <<" --epsilon "<<epsilon<<" --epsilon-min "<<epsilonMin<<" --epsilon-decay "<<decay
         <<" --batch "<<batch<<" --rollout "<<rollout<<" --clip "<<clip<<" --gae-lambda "<<lambda
         <<" --entropy "<<entropy<<" --sac-alpha "<<alpha<<" --eval-every "<<evalEvery<<" --eval-games "<<evalGames<<" --seed "<<seed<<" --patience "<<patience;
@@ -65,7 +66,7 @@ void TrainingPanel::poll(){
     ifstream file(runPath+"/metrics.tsv");string line;getline(file,line);
     while(getline(file,line)){
         istringstream row(line);string token;vector<float> v;while(getline(row,token,'\t'))v.push_back(strtof(token.c_str(),nullptr));
-        if(v.size()!=12)continue;
+        if(v.size()<12)continue;
         latestEpisode=static_cast<int>(v[0]);updates=static_cast<int>(v[11]);latestEpsilon=v[10];
         if(v[0]>0){rewards.push_back(v[1]);means.push_back(v[2]);losses.push_back(v[6]);actorLosses.push_back(v[7]);entropies.push_back(v[8]);}
         if(isfinite(v[4])){wins.push_back(v[4]*100);evalRewards.push_back(v[3]);latestWin=v[4]*100;bestWin=max(bestWin,latestWin);}
@@ -77,6 +78,9 @@ void TrainingPanel::draw(ImVec2 position,ImVec2 size){
     ImGui::BeginDisabled(running());ImGui::SetNextItemWidth(145);ImGui::Combo("Mode",&mode,modes,4);
     ImGui::SameLine();if(ImGui::Button("Start training"))start();ImGui::SameLine();ImGui::Checkbox("Resume selected latest.pt",&resume);ImGui::EndDisabled();
     ImGui::SameLine();ImGui::BeginDisabled(!running());if(ImGui::Button("Stop")){ofstream(runPath+"/STOP");status="Stopping after current episode/evaluation...";}ImGui::EndDisabled();
+    ImGui::BeginDisabled(running());ImGui::SetNextItemWidth(250);
+    if(ImGui::BeginCombo("Training opponent",Arena::botName(opponent))){for(int i=0;i<Arena::BotCount;++i)if(ImGui::Selectable(Arena::botName(i),opponent==i))opponent=i;ImGui::EndCombo();}
+    ImGui::EndDisabled();ImGui::TextWrapped("Start with Q-table + Rookie. Compare against the rule boss before increasing difficulty.");
     if(ImGui::CollapsingHeader("Hyperparameters (applied to next run)")){
         ImGui::BeginDisabled(running());
         ImGui::Columns(3,"parameters",false);

@@ -12,7 +12,7 @@ float length(Vec v);
 Vec unit(Vec v);
 struct Actor : Engine::GameObject { Vec position; float hp{}, radius{}; };
 struct Bullet { Vec position, velocity; float life; bool enemy; };
-struct Input { Vec move, aim; bool fire{}, dodge{}; };
+struct Input { Vec move, aim; bool fire{}, dodge{}; float speedScale{1},fireInterval{.24f}; };
 enum Action { Approach, Orbit, Slash, Charge, Pulse, Fan, ActionCount };
 enum class Phase { Decide, Windup, Active, Recovery, Dead };
 
@@ -30,6 +30,16 @@ public:
 
 class Arena {
 public:
+    enum Bot { Target, Rookie, Rusher, Kiter, Legacy, BotCount };
+    struct CombatStats {
+        array<unsigned,ActionCount> choices{};
+        unsigned attempts{},hits{};
+        float dealt{},taken{};
+    };
+    Bot bot{Legacy};
+    CombatStats stats;
+    static const char* botName(int bot);
+    int baselineAction() const;
     Actor player, boss;
     vector<Bullet> bullets;
     const array<Vec,4> pillars{{{260,185},{660,185},{260,455},{660,455}}};

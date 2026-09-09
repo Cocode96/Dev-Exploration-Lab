@@ -18,9 +18,25 @@ class Environment:
         self.dll.arena_reset.argtypes = [C.c_int, C.c_uint, fp, ip]
         self.dll.arena_step.argtypes = [C.c_int, C.c_int, fp, ip, fp]
         self.dll.policy_forward.argtypes = [C.c_char_p, fp, fp]
+        self.dll.arena_set_bot.argtypes = [C.c_int, C.c_int]
+        self.dll.arena_baseline.argtypes = [C.c_int]
+        self.dll.arena_stats.argtypes = [C.c_int, fp]
         self.x = (C.c_float * OBS)()
         self.mask = (C.c_int * ACTIONS)()
         self.result = (C.c_float * 6)()
+
+    def set_bot(self, bot):
+        if self.dll.arena_set_bot(self.index, bot):
+            raise ValueError("Invalid bot")
+
+    def baseline_action(self):
+        return self.dll.arena_baseline(self.index)
+
+    def stats(self):
+        out = (C.c_float * 10)()
+        if self.dll.arena_stats(self.index, out):
+            raise RuntimeError("Stats failed")
+        return np.array(out, dtype=np.float32)
 
     def observation(self):
         return np.array(self.x, dtype=np.float32), np.array(self.mask, dtype=bool)

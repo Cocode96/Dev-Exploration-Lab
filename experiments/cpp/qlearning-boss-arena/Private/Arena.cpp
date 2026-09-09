@@ -42,6 +42,7 @@ bool QTable::load(const string& path){
 }
 Arena::Arena(unsigned seed):rng(seed){reset();}
 void Arena::reset(){
+    stats={};
     player.position={155,320};player.hp=100;player.radius=13;
     boss.position={740,320};boss.hp=260;boss.radius=29;
     bullets.clear();phase=Phase::Decide;action=Approach;cooldown={};
@@ -62,12 +63,42 @@ void Arena::move(Actor& actor,Vec delta){
     actor.position=p;
 }
 Input Arena::botInput(){
+    if(bot!=Legacy){
+        Input result;result.aim=boss.position;
+        if(bot==Target)return result;
+        Vec d=boss.position-player.position;float distance=length(d);Vec u=unit(d),side{-u.y,u.x};
+        float desired=bot==Rookie?130.f:bot==Rusher?65.f:210.f;
+        float toward=distance>desired+20?1.f:distance<desired-20?-1.f:0.f;
+        result.move=u*toward+side*(bot==Kiter?.7f:.2f)*(sin(botClock)>0?1.f:-1.f);
+        result.speedScale=bot==Rookie?.5f:bot==Rusher?.75f:.85f;
+        result.fireInterval=bot==Rookie?.65f:.4f;result.fire=true;
+        // 숙련 봇도 공격 종료 시각을 정확히 읽지 않고 예고에 늦게 반응한다.
+        result.dodge=bot==Kiter&&phase==Phase::Windup&&phaseTime-timer>.35f&&distance<220;
+        return result;
+    }
     Vec d=boss.position-player.position;float distance=length(d);Vec u=unit(d);
     Vec tangent{-u.y,u.x};float toward=distance>245?1.f:distance<175?-1.f:0.f;
     Input result;result.move=unit(u*toward+tangent*(sin(botClock)>0?0.65f:-0.65f));
     result.aim=boss.position;result.fire=true;
     result.dodge=phase==Phase::Windup && timer<0.2f && distance<280;
     return result;
+}
+const char* Arena::botName(int bot){
+    static const char* names[]={"Target (no fire)","Rookie (slow, no dodge)","Rusher (close range)","Kiter (delayed dodge)","Legacy (hard benchmark)"};
+    return bot>=0&&bot<BotCount?names[bot]:"Unknown";
+}
+int Arena::baselineAction() const {
+    Vec delta=player.position-boss.position;float distance=length(delta);Vec direction=unit(delta);
+    if(distance<82)return Slash;
+    if(distance<145&&cooldown[1]<=0)return Pulse;
+    // 기둥 바로 앞에서는 직진 대신 옆으로 빠져나온다.
+    for(Vec pillar:pillars){Vec p=pillar-boss.position;float along=p.x*direction.x+p.y*direction.y;
+        float across=abs(p.x*direction.y-p.y*direction.x);
+        if(along>0&&along<90&&across<65)return Orbit;
+    }
+    if(distance>130&&distance<310&&cooldown[0]<=0)return Charge;
+    if(distance<450&&cooldown[2]<=0)return Fan;
+    return Approach;
 }
 void Arena::finish(QTable& q,bool terminal){
     if(pending){q.learn(decisionState,action,reward,state(),legal(),terminal,decisionSeconds);lastReward=reward;}
@@ -81,12 +112,13 @@ void Arena::tick(QTable& q,const Input& input,bool learning,int forcedAction){
     shotCooldown=max(0.f,shotCooldown-dt);dodgeCooldown=max(0.f,dodgeCooldown-dt);dodgeTime=max(0.f,dodgeTime-dt);
     if(input.dodge&&dodgeCooldown<=0){dodgeTime=.16f;dodgeCooldown=1.3f;dodgeDirection=length(input.move)>.01f?unit(input.move):unit(input.aim-player.position);}
     if(dodgeTime>0)move(player,dodgeDirection*(720*dt));
-    else if(length(input.move)>.01f)move(player,unit(input.move)*(210*dt));
-    if(input.fire&&shotCooldown<=0){bullets.push_back({player.position,unit(input.aim-player.position)*620,1.6f,false});shotCooldown=.24f;}
+    else if(length(input.move)>.01f)move(player,unit(input.move)*(210*dt*clamp(input.speedScale,0.f,1.f)));
+    if(input.fire&&shotCooldown<=0){bullets.push_back({player.position,unit(input.aim-player.position)*620,1.6f,false});shotCooldown=max(.24f,input.fireInterval);}
 
     if(phase==Phase::Decide){
         finish(q,false);decisionState=state();
         action=forcedAction>=0&&forcedAction<ActionCount&&legal()[forcedAction]?forcedAction:q.choose(decisionState,legal(),rng,learning);
+        ++stats.choices[action];
         pending=learning;reward=decisionSeconds=0;lockedAim=unit(player.position-boss.position);hit=false;
         if(action<Slash){phase=Phase::Active;timer=.4f;}
         else{phase=Phase::Windup;timer=action==Slash?.3f:action==Charge?.65f:action==Pulse?.9f:.55f;}
@@ -95,6 +127,7 @@ void Arena::tick(QTable& q,const Input& input,bool learning,int forcedAction){
     timer-=dt;
     if(phase==Phase::Windup&&timer<=0){
         phase=Phase::Active;timer=action==Charge?.42f:.12f;phaseTime=timer;
+        stats.attempts+=action==Fan?7:1;
         if(action>=Charge)cooldown[action-Charge]=action==Charge?3.5f:action==Pulse?5.f:3.f;
         if(action==Fan){float angle=atan2(lockedAim.y,lockedAim.x);for(int i=-3;i<=3;++i){float a=angle+i*.17f;bullets.push_back({boss.position+lockedAim*35,{cos(a)*310,sin(a)*310},2.4f,true});}}
     }
@@ -105,7 +138,7 @@ void Arena::tick(QTable& q,const Input& input,bool learning,int forcedAction){
         if(action==Charge)move(boss,lockedAim*(650*dt));
         float d=length(player.position-boss.position);
         bool intersects=action==Slash?d<91 && (toward.x*lockedAim.x+toward.y*lockedAim.y)>.25f:action==Pulse?d<170:action==Charge?d<player.radius+boss.radius:false;
-        if(!hit&&intersects&&dodgeTime<=0){player.hp=max(0.f,player.hp-(action==Slash?12.f:20.f));hit=true;}
+        if(!hit&&intersects&&dodgeTime<=0){player.hp=max(0.f,player.hp-(action==Slash?12.f:20.f));hit=true;++stats.hits;}
         if(timer<=0){phase=Phase::Recovery;timer=action<Slash?.05f:.5f;phaseTime=timer;}
     }else if(phase==Phase::Recovery&&timer<=0)phase=Phase::Decide;
     for(auto& b:bullets){
@@ -114,10 +147,11 @@ void Arena::tick(QTable& q,const Input& input,bool learning,int forcedAction){
         for(Vec pillar:pillars)if(length(b.position-pillar)<36)b.life=0;
         Actor& target=b.enemy?player:boss;
         if(b.life>0&&length(b.position-target.position)<target.radius+5){
-            if(!b.enemy||dodgeTime<=0)target.hp=max(0.f,target.hp-(b.enemy?9.f:5.f));b.life=0;
+            if(!b.enemy||dodgeTime<=0){target.hp=max(0.f,target.hp-(b.enemy?9.f:5.f));if(b.enemy)++stats.hits;}b.life=0;
         }
     }
     erase_if(bullets,[](const Bullet& b){return b.life<=0;});
+    stats.dealt+=oldPlayer-player.hp;stats.taken+=oldBoss-boss.hp;
     reward+=(oldPlayer-player.hp)*.12f-(oldBoss-boss.hp)*.1f-dt*.008f;
     if(player.hp<=0||boss.hp<=0||elapsed>=35){
         done=true;reward+=player.hp<=0?20.f:boss.hp<=0?-20.f:0.f;

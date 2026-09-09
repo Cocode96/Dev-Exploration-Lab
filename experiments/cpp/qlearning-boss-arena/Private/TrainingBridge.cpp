@@ -12,6 +12,16 @@ void output(int index,float* observation,int* mask){
 }
 extern "C" {
 __declspec(dllexport) int arena_version(){return 1;}
+__declspec(dllexport) int arena_set_bot(int index,int bot){
+    if(index<0||index>1||bot<0||bot>=Arena::BotCount)return -1;
+    arenas[index].bot=static_cast<Arena::Bot>(bot);return 0;
+}
+__declspec(dllexport) int arena_baseline(int index){return index>=0&&index<2?arenas[index].baselineAction():-1;}
+__declspec(dllexport) int arena_stats(int index,float* output){
+    if(index<0||index>1||!output)return -1;
+    const auto& s=arenas[index].stats;output[0]=s.dealt;output[1]=s.taken;output[2]=float(s.attempts);output[3]=float(s.hits);
+    for(int i=0;i<ActionCount;++i)output[4+i]=float(s.choices[i]);return 0;
+}
 __declspec(dllexport) int arena_reset(int index,unsigned seed,float* observation,int* mask){
     if(index<0||index>1||!observation||!mask)return -1;
     arenas[index].reseed(seed);output(index,observation,mask);return 0;

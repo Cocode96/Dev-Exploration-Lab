@@ -45,6 +45,30 @@ class TrainingTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 validate(defaults() | change)
 
+    def test_bot_profiles_baseline_and_combat_metrics(self):
+        env = Environment(0)
+        try:
+            for bot in range(5):
+                env.set_bot(bot)
+                env.reset(123)
+                while True:
+                    _, _, _, done, _, win, _ = env.step(env.baseline_action())
+                    if done:
+                        break
+                stats = env.stats()
+                self.assertTrue(np.isfinite(stats).all())
+                self.assertGreater(stats[2], 0)
+                self.assertGreater(stats[4:].sum(), 0)
+                self.assertLessEqual(stats[3], stats[2])
+                if bot == 0:
+                    self.assertTrue(win)
+                    self.assertEqual(stats[0], 100)
+                    self.assertEqual(stats[1], 0)
+                env.reset(123)
+                self.assertTrue((env.stats() == 0).all())
+        finally:
+            env.set_bot(4)
+
     def test_categorical_masks_and_entropy(self):
         mask = tensor([True, False, True, False, False, False], torch.bool)
         logits = torch.tensor([0., 100., 2., 100., 100., 100.], requires_grad=True)

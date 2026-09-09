@@ -15,7 +15,7 @@ def defaults():
     return dict(mode="DQN", episodes=500, lr=.0003, table_lr=.16, gamma=.96,
                 epsilon=.3, epsilon_min=.05, epsilon_decay=.995, batch=64,
                 rollout=256, clip=.2, gae_lambda=.95, entropy=.01, sac_alpha=.2,
-                eval_every=25, eval_games=20, seed=42, patience=0)
+                eval_every=25, eval_games=20, seed=42, patience=0, bot=1)
 
 
 def validate(c):
@@ -23,6 +23,8 @@ def validate(c):
         raise ValueError("Settings must be finite")
     if c["mode"] not in ("QTABLE", "DQN", "PPO", "SAC"):
         raise ValueError("Unknown mode")
+    if c["bot"] not in range(5):
+        raise ValueError("Unknown bot")
     for key in ("episodes", "eval_every", "eval_games", "batch", "rollout"):
         if c[key] < 1:
             raise ValueError(f"{key} must be positive")
@@ -44,10 +46,11 @@ def save(agent, folder, name):
     agent.export(folder / (name + (".qtable" if agent.mode == "QTABLE" else ".nn")))
 
 
-def evaluate(agent, env, games, seed_base=1000000):
+def evaluate(agent, env, games, seed_base=1000000, bot=4):
     # 평가가 학습의 난수 순서를 바꾸지 않도록 보존한다.
     rng, nrng, trng = random.getstate(), np.random.get_state(), torch.get_rng_state()
     rewards, wins, losses = [], 0, 0
+    env.set_bot(bot)
     try:
         for game in range(games):
             x, mask = env.reset(seed_base + game)
@@ -83,18 +86,19 @@ def run(config, folder, resume=None):
     if resume:
         agent.restore(torch.load(resume, map_location="cpu", weights_only=True))
     env, validation = Environment(0), Environment(1)
+    env.set_bot(config["bot"])
     best_score, stale = None, 0
     history = []
     completed = 0
     stopped = False
     with (folder / "metrics.tsv").open("w", buffering=1, encoding="ascii") as log:
-        log.write("episode\treward\tmean20\teval_reward\twin_rate\tloss_rate\tloss\tactor_loss\tentropy\tkl\tepsilon\tupdates\n")
+        log.write("episode\treward\tmean20\teval_reward\twin_rate\tloss_rate\tloss\tactor_loss\tentropy\tkl\tepsilon\tupdates\tdealt\ttaken\tattempts\thits\tapproach\torbit\tslash\tcharge\tpulse\tfan\n")
 
         def record(episode, reward, do_eval):
             nonlocal best_score, stale
             er, wr, lr = float("nan"), float("nan"), float("nan")
             if do_eval:
-                er, wr, lr = evaluate(agent, validation, config["eval_games"])
+                er, wr, lr = evaluate(agent, validation, config["eval_games"], bot=config["bot"])
                 score = (wr, er)
                 if best_score is None or score > best_score:
                     best_score, stale = score, 0
@@ -106,7 +110,8 @@ def run(config, folder, resume=None):
             row = (episode, reward, float(np.mean(history[-20:])) if history else 0., er, wr, lr,
                    agent.loss, agent.actor_loss, agent.entropy, agent.kl,
                    agent.epsilon if agent.mode in ("QTABLE", "DQN") else float("nan"), agent.updates)
-            log.write("\t".join(map(str, row)) + "\n")
+            stats = tuple(env.stats()) if episode else (0,) * 10
+            log.write("\t".join(map(str, row + stats)) + "\n")
             log.flush()
 
         record(0, 0, True)  # 학습 전 모델도 같은 조건으로 평가한다.

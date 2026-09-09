@@ -12,6 +12,7 @@ using namespace std;
 class TrainingPanel {
 public:
     int mode{};
+    int opponent{1};
     string loadRequested;
     ~TrainingPanel();
     void draw(ImVec2 position,ImVec2 size);
