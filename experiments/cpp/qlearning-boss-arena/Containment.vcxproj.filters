@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup><Filter Include="Arena" /><Filter Include="Application" /><Filter Include="Engine" /><Filter Include="ThirdParty" /></ItemGroup>
+  <ItemGroup><ClInclude Include="Public\Arena.h"><Filter>Arena</Filter></ClInclude></ItemGroup>
+  <ItemGroup><Filter Include="Learning/NeuralPolicy" /></ItemGroup>
+  <ItemGroup><Filter Include="Learning/TrainingPanel" /></ItemGroup>
+  <ItemGroup><ClInclude Include="Public\TrainingPanel.h"><Filter>Learning/TrainingPanel</Filter></ClInclude><ClCompile Include="Private\TrainingPanel.cpp"><Filter>Learning/TrainingPanel</Filter></ClCompile></ItemGroup>
+  <ItemGroup><ClInclude Include="Public\NeuralPolicy.h"><Filter>Learning/NeuralPolicy</Filter></ClInclude><ClCompile Include="Private\NeuralPolicy.cpp"><Filter>Learning/NeuralPolicy</Filter></ClCompile></ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Private\Arena.cpp"><Filter>Arena</Filter></ClCompile><ClCompile Include="Private\Main.cpp"><Filter>Application</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\Engine\Private\InputManager.cpp"><Filter>Engine</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\Engine\Private\DebugUiManager.cpp"><Filter>Engine</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\ThirdParty\imgui\imgui.cpp"><Filter>ThirdParty</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\ThirdParty\imgui\imgui_draw.cpp"><Filter>ThirdParty</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\ThirdParty\imgui\imgui_tables.cpp"><Filter>ThirdParty</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\ThirdParty\imgui\imgui_widgets.cpp"><Filter>ThirdParty</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\ThirdParty\imgui\backends\imgui_impl_dx11.cpp"><Filter>ThirdParty</Filter></ClCompile>
+    <ClCompile Include="..\dx11-wboit-benchmark\ThirdParty\imgui\backends\imgui_impl_win32.cpp"><Filter>ThirdParty</Filter></ClCompile>
+  </ItemGroup>
+</Project>
