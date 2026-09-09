@@ -4,6 +4,7 @@ import json
 import random
 from pathlib import Path
 import traceback
+import math
 import numpy as np
 import torch
 from algorithms import Agent
@@ -18,6 +19,8 @@ def defaults():
 
 
 def validate(c):
+    if any(isinstance(value, (int, float)) and not math.isfinite(value) for value in c.values()):
+        raise ValueError("Settings must be finite")
     if c["mode"] not in ("QTABLE", "DQN", "PPO", "SAC"):
         raise ValueError("Unknown mode")
     for key in ("episodes", "eval_every", "eval_games", "batch", "rollout"):
@@ -101,7 +104,8 @@ def run(config, folder, resume=None):
                     stale += 1
                 save(agent, folder, "latest")
             row = (episode, reward, float(np.mean(history[-20:])) if history else 0., er, wr, lr,
-                   agent.loss, agent.actor_loss, agent.entropy, agent.kl, agent.epsilon, agent.updates)
+                   agent.loss, agent.actor_loss, agent.entropy, agent.kl,
+                   agent.epsilon if agent.mode in ("QTABLE", "DQN") else float("nan"), agent.updates)
             log.write("\t".join(map(str, row)) + "\n")
             log.flush()
 

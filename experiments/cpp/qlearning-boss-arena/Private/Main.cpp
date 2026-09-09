@@ -105,6 +105,18 @@ int tests(){
 int main(int argc,char** argv){
     try{
     if(argc>1&&string(argv[1])=="--test")return tests();
+    if(argc>2&&string(argv[1])=="--eval-model"){
+        NeuralPolicy model;if(!model.load(argv[2]))throw runtime_error("Neural model load failed");
+        int games=argc>3?clamp(stoi(argv[3]),1,1000):20;unsigned seed=argc>4?stoul(argv[4]):1000000;
+        Arena arena;QTable unused;int wins=0;float total=0;
+        for(int e=0;e<games;++e){
+            arena.reseed(seed+e);
+            while(!arena.done)arena.tick(unused,arena.botInput(),false,arena.phase==Phase::Decide?model.choose(arena):-1);
+            wins+=arena.player.hp<=0;
+            total+=(100-arena.player.hp)*.12f-(260-arena.boss.hp)*.1f-arena.elapsed*.008f+(arena.player.hp<=0?20.f:arena.boss.hp<=0?-20.f:0.f);
+        }
+        cout<<"mode="<<model.algorithm<<" games="<<games<<" wins="<<wins<<" mean_reward="<<total/games<<'\n';return 0;
+    }
     if(argc>1&&string(argv[1])=="--eval"){
         QTable q;if(!q.load("policy.qtable"))throw runtime_error("Policy load failed");
         cout<<"loaded_updates="<<q.updates<<" wins_per_100="<<evaluate(q,9000)<<'\n';return 0;
@@ -116,7 +128,8 @@ int main(int argc,char** argv){
         cout<<"episodes="<<count<<" updates="<<q.updates<<" baseline_wins_per_100="<<baseline<<" learned_wins_per_100="<<evaluate(q,9000)<<'\n';
         return q.save("policy.qtable")?0:2;
     }
-    bool smoke=argc>1&&string(argv[1])=="--smoke";
+    bool trainerSmoke=argc>1&&string(argv[1])=="--trainer-smoke";
+    bool smoke=trainerSmoke||(argc>1&&string(argv[1])=="--smoke");
     if(!smoke)FreeConsole();
     HINSTANCE instance=GetModuleHandleW(nullptr);
     WNDCLASSW wc{};wc.lpfnWndProc=WindowProc;wc.hInstance=instance;wc.lpszClassName=L"ContainmentArena";wc.hCursor=LoadCursor(nullptr,IDC_ARROW);RegisterClassW(&wc);
@@ -127,12 +140,17 @@ int main(int argc,char** argv){
     if(!smoke)ShowWindow(window,SW_SHOW);
     Arena arena;QTable policy;bool automatic=true,learning=true,paused=false;int trainingRemaining=0;int trained=0;string status="Observe the bot, train, then take control.";
     NeuralPolicy neural;TrainingPanel training;
-    if(smoke&&argc>2)training.selectRun(argv[2]);
+    if(trainerSmoke){
+        string algorithm=argc>2?argv[2]:"DQN";
+        if(algorithm!="DQN"&&algorithm!="PPO"&&algorithm!="SAC"&&algorithm!="QTABLE")throw runtime_error("Invalid smoke algorithm");
+        training.startSmoke(algorithm=="DQN"?1:algorithm=="PPO"?2:algorithm=="SAC"?3:0);
+        if(!training.running())throw runtime_error("Trainer launch failed");
+    }else if(smoke&&argc>2){training.selectRun(argv[2]);if(argc>3)training.loadRequested=argv[3];}
     char modelName[65]="boss_500";string selectedModel,activeModel="Unsaved";vector<string> models;
     auto refreshModels=[&]{models=modelFiles("models");error_code error;if(filesystem::is_regular_file("policy.qtable",error))models.insert(models.begin(),"policy.qtable");};
     refreshModels();
     ImVec2 origin{18,90};float scale=1;
-    auto previous=chrono::steady_clock::now();double accumulator=0;int rendered=0;
+    auto previous=chrono::steady_clock::now();auto smokeStart=previous;double accumulator=0;int rendered=0;
     MSG message{};bool running=true;
     while(running){
         while(PeekMessageW(&message,nullptr,0,0,PM_REMOVE)){if(message.message==WM_QUIT)running=false;TranslateMessage(&message);DispatchMessageW(&message);}if(!running)break;
@@ -140,6 +158,7 @@ int main(int argc,char** argv){
         if(resizePending){context->OMSetRenderTargets(0,nullptr,nullptr);target.Reset();if(FAILED(swapchain->ResizeBuffers(0,0,0,DXGI_FORMAT_UNKNOWN,0))||!renderTarget())throw runtime_error("Resize failed");resizePending=false;}
         ui.begin_frame();auto now=chrono::steady_clock::now();accumulator+=min(.1,chrono::duration<double>(now-previous).count());previous=now;
         auto display=ImGui::GetIO().DisplaySize;scale=min((display.x-315.f)/920.f,(display.y-400.f)/640.f);scale=max(.1f,scale);
+        origin.x=max(18.f,(display.x-315.f-920*scale)*.5f);
         int oldMode=training.mode;
         float panelY=origin.y+640*scale+12;
         training.draw({18,panelY},{display.x-320,display.y-panelY-12});
@@ -256,9 +275,14 @@ int main(int argc,char** argv){
         draw->AddText(point({48,66}),color(155,211,211),"SCOUT / HP");draw->AddText(point({590,66}),color(228,184,147),"WARDEN-07 / HP");
         if(arena.done){box({240,250},{680,375},color(7,13,22,240),12);draw->AddText(nullptr,26,point({275,276}),color(237,226,203),arena.boss.hp<=0?"WARDEN DEFEATED":arena.player.hp<=0?"SCOUT DOWN":"TRIAL COMPLETE");draw->AddText(point({275,325}),color(160,185,195),"Restart round to continue. Q-table retained.");}
         ui.end_frame();float clear[]={.025f,.04f,.06f,1};context->OMSetRenderTargets(1,target.GetAddressOf(),nullptr);context->ClearRenderTargetView(target.Get(),clear);ui.render_draw_data();
-        if(smoke&&rendered==59&&!capture("build/preview.bmp"))throw runtime_error("Capture failed");
+        bool finishSmoke=smoke&&(trainerSmoke?!training.running():rendered==59);
+        if(trainerSmoke&&chrono::duration<double>(now-smokeStart).count()>60)throw runtime_error("Trainer smoke timed out");
+        if(finishSmoke&&trainerSmoke&&training.exitCode!=0)throw runtime_error("Trainer process failed");
+        if(finishSmoke&&!capture("build/preview.bmp"))throw runtime_error("Capture failed");
         if(FAILED(swapchain->Present(smoke?0:1,0)))throw runtime_error("Present failed");inputManager.end_frame();
-        if(smoke&&++rendered==60){cout<<"60 native DX11 frames rendered\n";running=false;}
+        ++rendered;
+        if(finishSmoke){cout<<rendered<<" native DX11 frames rendered"<<(trainerSmoke?"; Python trainer completed":"")<<'\n';running=false;}
+        if(trainerSmoke)Sleep(1);
     }
     ui.shutdown();DestroyWindow(window);return 0;
     }catch(const exception& e){cerr<<e.what()<<'\n';return 1;}

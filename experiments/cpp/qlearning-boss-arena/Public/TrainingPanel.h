@@ -17,6 +17,8 @@ public:
     void draw(ImVec2 position,ImVec2 size);
     bool running() const { return process!=nullptr; }
     void selectRun(const string& path);
+    void startSmoke(int algorithm);
+    DWORD exitCode{STILL_ACTIVE};
 private:
     HANDLE process{}, job{};
     string runPath,status="Training uses the C++ arena in a separate Python process.";

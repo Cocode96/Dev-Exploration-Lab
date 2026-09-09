@@ -20,7 +20,12 @@ void TrainingPanel::refreshRuns(){
     while(!error&&it!=end){if(it->is_directory(error))runs.push_back(it->path().generic_string());it.increment(error);}
     sort(runs.rbegin(),runs.rend());
 }
-void TrainingPanel::selectRun(const string& path){runPath=path;lastPoll=0;}
+void TrainingPanel::selectRun(const string& path){
+    runPath=path;lastPoll=0;
+    ifstream file(runPath+"/config.json");string content((istreambuf_iterator<char>(file)),istreambuf_iterator<char>());
+    for(int i=0;i<4;++i)if(content.find(string("\"mode\": \"")+ids[i]+"\"")!=string::npos)mode=i;
+}
+void TrainingPanel::startSmoke(int algorithm){mode=algorithm;episodes=8;evalEvery=4;evalGames=4;start();}
 void TrainingPanel::start(){
     auto python=filesystem::absolute(".venv/Scripts/python.exe");
     if(!filesystem::exists(python)||!filesystem::exists("build/Release/ArenaTraining.dll")){status="Run setup-training.cmd and build.cmd first.";return;}
@@ -50,12 +55,12 @@ void TrainingPanel::start(){
     CloseHandle(log);CloseHandle(input);
     if(!created){if(job)CloseHandle(job);job=nullptr;status="Could not launch trainer.";return;}
     if(!AssignProcessToJobObject(job,pi.hProcess)){TerminateProcess(pi.hProcess,1);CloseHandle(pi.hThread);CloseHandle(pi.hProcess);CloseHandle(job);job=nullptr;status="Could not attach trainer lifecycle.";return;}
-    process=pi.hProcess;ResumeThread(pi.hThread);CloseHandle(pi.hThread);
+    process=pi.hProcess;exitCode=STILL_ACTIVE;ResumeThread(pi.hThread);CloseHandle(pi.hThread);
     status="Training in Python. Load a checkpoint to preview in this arena.";lastPoll=0;refreshRuns();
 }
 void TrainingPanel::poll(){
     if(GetTickCount64()-lastPoll<500)return;lastPoll=GetTickCount64();
-    if(process&&WaitForSingleObject(process,0)==WAIT_OBJECT_0){DWORD code;GetExitCodeProcess(process,&code);CloseHandle(process);process=nullptr;CloseHandle(job);job=nullptr;status=code==0?"Training finished. Best and latest checkpoints are available.":"Training failed. See selected run/error.txt or console.log.";}
+    if(process&&WaitForSingleObject(process,0)==WAIT_OBJECT_0){GetExitCodeProcess(process,&exitCode);CloseHandle(process);process=nullptr;CloseHandle(job);job=nullptr;status=exitCode==0?"Training finished. Best and latest checkpoints are available.":"Training failed. See selected run/error.txt or console.log.";}
     rewards.clear();means.clear();evalRewards.clear();wins.clear();losses.clear();actorLosses.clear();entropies.clear();latestEpisode=updates=0;bestWin=latestWin=0;
     ifstream file(runPath+"/metrics.tsv");string line;getline(file,line);
     while(getline(file,line)){
@@ -86,7 +91,9 @@ void TrainingPanel::draw(ImVec2 position,ImVec2 size){
     ImGui::SameLine();if(ImGui::Button("Refresh runs"))refreshRuns();ImGui::EndDisabled();
     auto request=[&](const char* name){auto nn=runPath+"/"+name+".nn",q=runPath+"/"+name+".qtable";if(filesystem::exists(nn))loadRequested=nn;else if(filesystem::exists(q))loadRequested=q;else status="Checkpoint not available yet.";};
     ImGui::SameLine();if(ImGui::Button("Load best"))request("best");ImGui::SameLine();if(ImGui::Button("Load latest"))request("latest");
-    ImGui::Text("Episode %d | updates %d | epsilon %.3f | eval %.1f%% / best %.1f%%",latestEpisode,updates,latestEpsilon,latestWin,bestWin);
+    ImGui::Text("Episode %d | updates %d | eval %.1f%% / best %.1f%%",latestEpisode,updates,latestWin,bestWin);
+    if(isfinite(latestEpsilon))ImGui::Text("Epsilon %.3f (Q-table/DQN only)",latestEpsilon);
+    if(!means.empty())ImGui::Text("Mean return %.2f | critic loss %.4f | evaluation sample count: see run config.json",means.back(),losses.back());
     float width=(ImGui::GetContentRegionAvail().x-24)/3;
     ImGui::BeginGroup();ImGui::TextUnformatted("Train reward (20-episode mean)");ImGui::PlotLines("##reward",means.data(),static_cast<int>(means.size()),0,nullptr,FLT_MAX,FLT_MAX,{width,68});ImGui::EndGroup();ImGui::SameLine();
     ImGui::BeginGroup();ImGui::TextUnformatted("Eval win % (fixed-seed checks)");ImGui::PlotLines("##wins",wins.data(),static_cast<int>(wins.size()),0,nullptr,0,100,{width,68});ImGui::EndGroup();ImGui::SameLine();
